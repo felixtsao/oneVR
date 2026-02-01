@@ -155,6 +155,8 @@ VideoEncoder::VideoEncoder(const std::string& out_path, const EncodeSettings& se
 
     // Stream time_base should match encoder time_base for clean pts handling.
     impl_->vstream->time_base = impl_->enc->time_base;
+    impl_->vstream->avg_frame_rate = impl_->enc->framerate;
+    impl_->vstream->r_frame_rate = impl_->enc->framerate;
 
     ret = avcodec_parameters_from_context(impl_->vstream->codecpar, impl_->enc);
     if (ret < 0) throw_ff("avcodec_parameters_from_context failed", ret);
