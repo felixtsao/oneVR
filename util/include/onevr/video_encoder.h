@@ -23,8 +23,8 @@ struct EncodeSettings {
     int output_height = 0;
 
     // fps = fps_num / fps_den
-    int fps_num = 30;
-    int fps_den = 1;
+    int fps_num = 30000;
+    int fps_den = 1001;
 
     // target bitrate (bits/sec). Reasonable preview default.
     int bitrate = 20'000'000;

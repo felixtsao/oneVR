@@ -60,9 +60,8 @@ static const AVCodec* pick_encoder(const EncodeSettings& s) {
             if (const AVCodec* c = avcodec_find_encoder_by_name("hevc_nvenc")) return c;
             break;
         }
-        // If GPU requested but not available, fall through to CPU fallback
-        [[fallthrough]];
         fprintf(stderr, "[onevr] NVENC not available, falling back to CPU\n");
+        [[fallthrough]];
     case EncodeHardware::CPU:
         switch (s.codec) {
         case VideoCodec::H264:
@@ -184,9 +183,9 @@ VideoEncoder::VideoEncoder(const std::string& out_path, const EncodeSettings& se
 
     // RGB24 -> dst_fmt swscale
     impl_->sws = sws_getContext(
-        impl_->s.output_width, impl_->s.output_height, AV_PIX_FMT_RGB24,
+        impl_->s.input_width, impl_->s.input_height, AV_PIX_FMT_RGB24,
         impl_->s.output_width, impl_->s.output_height, impl_->dst_fmt,
-        SWS_BILINEAR,
+        SWS_BICUBIC,
         nullptr, nullptr, nullptr
     );
     if (!impl_->sws) throw std::runtime_error("sws_getContext failed");
@@ -224,7 +223,7 @@ VideoEncoder::~VideoEncoder() {
 void VideoEncoder::write_rgb24(const FrameRGB& frame, int64_t pts) {
     if (!impl_ || impl_->finished) throw std::runtime_error("encoder is finished");
 
-    if (frame.width != impl_->s.output_width || frame.height != impl_->s.output_height) {
+    if (frame.width != impl_->s.input_width || frame.height != impl_->s.input_height) {
         throw std::runtime_error("write_rgb24: frame size mismatch");
     }
     if (frame.stride < frame.width * 3) {

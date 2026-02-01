@@ -25,14 +25,13 @@ int main(int argc, char** argv) {
     onevr::VideoDecoder left(left_path);
     onevr::VideoDecoder right(right_path);
 
-    int target_width = 8192;
-    int target_height = 4096;
-
     onevr::EncodeSettings es;
-    es.output_width = target_width;
-    es.output_height = target_height;
-    es.fps_num = 29.97;
-    es.fps_den = 1;
+    es.input_width = left.width() * 2;
+    es.input_height = left.height();
+    es.output_width = 8192;
+    es.output_height = 4096;
+    es.fps_num = 30000;
+    es.fps_den = 1001;
     es.bitrate = 20'000'000;
     es.hardware = onevr::EncodeHardware::GPU;
     es.codec = onevr::VideoCodec::HEVC;
@@ -44,9 +43,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < num_frames; ++i) {
         onevr::FrameRGB L, R;
         if (!left.read_rgb24(L) || !right.read_rgb24(R)) break;
-        onevr::FrameRGB scaled_l = onevr::scale_rgb24(L, target_width / 2, target_height);
-        onevr::FrameRGB scaled_r = onevr::scale_rgb24(R, target_width / 2, target_height);
-        onevr::FrameRGB sbs = onevr::sbs_rgb(scaled_l, scaled_r);
+        onevr::FrameRGB sbs = onevr::sbs_rgb(L, R);
         enc.write_rgb24(sbs, /*pts=*/i);
     }
 
