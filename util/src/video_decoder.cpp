@@ -113,7 +113,7 @@ VideoDecoder::~VideoDecoder() {
     impl_ = nullptr;
 }
 
-bool VideoDecoder::read_rgb24(FrameRGB& out) {
+bool VideoDecoder::read(rgb::Frame& out) {
     if (!impl_ || impl_->eof) return false;
 
     int ret = 0;
@@ -159,7 +159,7 @@ bool VideoDecoder::read_rgb24(FrameRGB& out) {
                 impl_->rgb->linesize
             );
 
-            // Copy into output FrameRGB (so caller owns it).
+            // Copy into output rgb::Frame (so caller owns it).
             out.width = width_;
             out.height = height_;
             out.stride = rgb_stride_;

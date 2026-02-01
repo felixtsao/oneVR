@@ -9,7 +9,7 @@ extern "C" {
 
 namespace onevr {
 
-FrameRGB sbs_rgb(const onevr::FrameRGB& L, const onevr::FrameRGB& R) {
+rgb::Frame cat_sbs(const onevr::rgb::Frame& L, const onevr::rgb::Frame& R) {
     if (L.width != R.width || L.height != R.height) {
         throw std::runtime_error("sbs_rgb: L/R size mismatch");
     }
@@ -17,7 +17,7 @@ FrameRGB sbs_rgb(const onevr::FrameRGB& L, const onevr::FrameRGB& R) {
         throw std::runtime_error("sbs_rgb: invalid stride");
     }
 
-    onevr::FrameRGB out;
+    onevr::rgb::Frame out;
     out.width = L.width + R.width;
     out.height = L.height;
     out.stride = out.width * 3;

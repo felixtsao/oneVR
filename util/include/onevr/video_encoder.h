@@ -48,7 +48,7 @@ public:
     VideoEncoder& operator=(const VideoEncoder&) = delete;
 
     // pts is in encoder time_base ticks (we set time_base = fps_den/fps_num, so pts = frame_index works).
-    void write_rgb24(const FrameRGB& frame, int64_t pts);
+    void write(const rgb::Frame& frame, int64_t pts);
 
     // Flush and finalize file (also called by destructor, but explicit is nice).
     void finish();

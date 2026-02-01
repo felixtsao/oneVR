@@ -41,10 +41,10 @@ int main(int argc, char** argv) {
 
     int num_frames = 120;
     for (int i = 0; i < num_frames; ++i) {
-        onevr::FrameRGB L, R;
-        if (!left.read_rgb24(L) || !right.read_rgb24(R)) break;
-        onevr::FrameRGB sbs = onevr::sbs_rgb(L, R);
-        enc.write_rgb24(sbs, /*pts=*/i);
+        onevr::rgb::Frame L, R;
+        if (!left.read(L) || !right.read(R)) break;
+        onevr::rgb::Frame sbs = onevr::cat_sbs(L, R);
+        enc.write(sbs, /*pts=*/i);
     }
 
     enc.finish();

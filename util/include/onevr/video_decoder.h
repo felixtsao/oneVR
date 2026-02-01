@@ -14,7 +14,7 @@ public:
     VideoDecoder& operator=(const VideoDecoder&) = delete;
 
     // Reads next frame. Returns false on EOF.
-    bool read_rgb24(FrameRGB& out);
+    bool read(rgb::Frame& out);
 
     int width() const { return width_; }
     int height() const { return height_; }

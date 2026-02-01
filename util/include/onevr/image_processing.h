@@ -4,6 +4,6 @@
 namespace onevr {
 
 // Side-by-side concatenated frames (stereo)
-FrameRGB sbs_rgb(const FrameRGB& left, const FrameRGB& right);
+rgb::Frame cat_sbs(const rgb::Frame& left, const rgb::Frame& right);
 
-}
+}  // namespace onevr

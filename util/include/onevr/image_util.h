@@ -5,6 +5,6 @@
 namespace onevr {
 
 // Writes RGB24 as binary PPM (P6).
-void write_ppm(const std::string& path, const FrameRGB& frame);
+void write_ppm(const std::string& path, const rgb::Frame& frame);
 
 }  // namespace onevr

@@ -4,7 +4,7 @@
 
 namespace onevr {
 
-void write_ppm(const std::string& path, const FrameRGB& frame) {
+void write_ppm(const std::string& path, const rgb::Frame& frame) {
     FILE* f = std::fopen(path.c_str(), "wb");
     if (!f) throw std::runtime_error("failed to open output file: " + path);
 

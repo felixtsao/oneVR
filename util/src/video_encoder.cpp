@@ -222,7 +222,7 @@ VideoEncoder::~VideoEncoder() {
     impl_ = nullptr;
 }
 
-void VideoEncoder::write_rgb24(const FrameRGB& frame, int64_t pts) {
+void VideoEncoder::write(const rgb::Frame& frame, int64_t pts) {
     if (!impl_ || impl_->finished) throw std::runtime_error("encoder is finished");
 
     if (frame.width != impl_->s.input_width || frame.height != impl_->s.input_height) {
