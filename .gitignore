@@ -1,0 +1,28 @@
+# Bazel output directories
+bazel-*
+/bazel-bin/
+/bazel-out/
+/bazel-testlogs/
+
+# Bazel user config
+.bazelrc.user
+
+# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Editor junk
+.vscode/
+.cursor/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
