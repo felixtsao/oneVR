@@ -1,5 +1,5 @@
 cc_binary(
-    name = "warper",
+    name = "warp",
     srcs = ["src/main.cpp"],
     copts = ["-std=c++20"],
     defines = ["__STDC_CONSTANT_MACROS", "__STDC_FORMAT_MACROS", "__STDC_LIMIT_MACROS"],

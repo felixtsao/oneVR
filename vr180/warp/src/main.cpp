@@ -12,7 +12,7 @@
 
 int main(int argc, char** argv) {
     if (argc < 4) {
-        std::cerr << "usage: warper <left.mp4> <right.mp4> <out_dir>\n";
+        std::cerr << "usage: warp <left.mp4> <right.mp4> <out_dir>\n";
         return 1;
     }
 
