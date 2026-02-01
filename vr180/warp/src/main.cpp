@@ -9,8 +9,11 @@
 #include "onevr/video_encoder.h"
 #include "onevr/frame.h"
 
+#include "warp.h"
+
 
 int main(int argc, char** argv) {
+
     if (argc < 4) {
         std::cerr << "usage: warp <left.mp4> <right.mp4> <out_dir>\n";
         return 1;
@@ -26,8 +29,8 @@ int main(int argc, char** argv) {
     onevr::VideoDecoder right(right_path);
 
     onevr::EncodeSettings es;
-    es.input_width = left.width() * 2;
-    es.input_height = left.height();
+    es.input_width = 8192;
+    es.input_height = 4096;
     es.output_width = 8192;
     es.output_height = 4096;
     es.fps_num = 30000;
@@ -35,15 +38,26 @@ int main(int argc, char** argv) {
     es.bitrate = 20'000'000;
     es.hardware = onevr::EncodeHardware::GPU;
     es.codec = onevr::VideoCodec::HEVC;
-    es.preset = (es.hardware == onevr::EncodeHardware::GPU) ? "p4" : "veryfast";
-
+    es.preset = (es.hardware == onevr::EncodeHardware::GPU) ? "p4" : "medium";
     onevr::VideoEncoder enc(out_dir + "out.mp4", es);
 
-    int num_frames = 120;
+    onevr::vr180::Camera cam;
+    cam.width = left.width();
+    cam.height = left.height();
+    cam.hfov_degrees = 120.0f;
+    onevr::vr180::Vr180WarpSettings ws;
+    ws.eye_width = 4096;
+    ws.eye_height = 4096;
+    ws.interpolation_method = onevr::vr180::InterpolationMethod::BILINEAR;
+    onevr::UvMap lut = onevr::vr180::create_warp_slut(cam, ws);
+
+    int num_frames = 30;
     for (int i = 0; i < num_frames; ++i) {
         onevr::rgb::Frame L, R;
         if (!left.read(L) || !right.read(R)) break;
-        onevr::rgb::Frame sbs = onevr::cat_sbs(L, R);
+        onevr::rgb::Frame warpedL = onevr::vr180::warp(L, lut, onevr::vr180::InterpolationMethod::BILINEAR);
+        onevr::rgb::Frame warpedR = onevr::vr180::warp(R, lut, onevr::vr180::InterpolationMethod::BILINEAR);
+        onevr::rgb::Frame sbs = onevr::cat_sbs(warpedL, warpedR);
         enc.write(sbs, /*pts=*/i);
     }
 

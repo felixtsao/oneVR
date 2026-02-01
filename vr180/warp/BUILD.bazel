@@ -1,10 +1,29 @@
+cc_library(
+    name = "warp_lib",
+    srcs = [
+        "src/warp_slut.cpp",
+    ],
+    hdrs = [
+        "include/warp.h",
+    ],
+    includes = ["include"],
+    deps = [
+        "//util:util",
+    ],
+    copts = ["-std=c++20"],
+    visibility = ["//visibility:public"],
+)
+
 cc_binary(
     name = "warp",
-    srcs = ["src/main.cpp"],
+    srcs = [
+        "src/main.cpp",
+    ],
     copts = ["-std=c++20"],
     defines = ["__STDC_CONSTANT_MACROS", "__STDC_FORMAT_MACROS", "__STDC_LIMIT_MACROS"],
     deps = [
-        "//util:media",
+        ":warp_lib",
+        "//util:util",
     ],
     data = [
         "//cam:configs",

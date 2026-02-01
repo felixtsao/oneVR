@@ -226,10 +226,10 @@ void VideoEncoder::write(const rgb::Frame& frame, int64_t pts) {
     if (!impl_ || impl_->finished) throw std::runtime_error("encoder is finished");
 
     if (frame.width != impl_->s.input_width || frame.height != impl_->s.input_height) {
-        throw std::runtime_error("write_rgb24: frame size mismatch");
+        throw std::runtime_error("write: frame size mismatch");
     }
     if (frame.stride < frame.width * 3) {
-        throw std::runtime_error("write_rgb24: invalid stride");
+        throw std::runtime_error("write: invalid stride");
     }
 
     int ret = av_frame_make_writable(impl_->yuv);

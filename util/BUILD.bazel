@@ -1,5 +1,5 @@
 cc_library(
-    name = "media",
+    name = "util",
     srcs = glob(["src/*.cpp"]),
     hdrs = glob(["include/onevr/*.h"]),
     includes = ["include"],
