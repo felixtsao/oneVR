@@ -1,9 +1,14 @@
 #include <filesystem>
 #include <iostream>
+#include <stdexcept>
+#include <cstring>
 #include <string>
 
-#include "onevr/image_util.h"
+#include "onevr/image_processing.h"
 #include "onevr/video_decoder.h"
+#include "onevr/video_encoder.h"
+#include "onevr/frame.h"
+
 
 int main(int argc, char** argv) {
     if (argc < 4) {
@@ -20,25 +25,32 @@ int main(int argc, char** argv) {
     onevr::VideoDecoder left(left_path);
     onevr::VideoDecoder right(right_path);
 
-    onevr::FrameRGB L, R;
+    int target_width = 8192;
+    int target_height = 4096;
 
-    std::cout << "Reading first frame...\n";
-    if (!left.read_rgb24(L)) {
-        std::cerr << "failed to read left first frame\n";
-        return 2;
-    }
-    if (!right.read_rgb24(R)) {
-        std::cerr << "failed to read right first frame\n";
-        return 2;
+    onevr::EncodeSettings es;
+    es.output_width = target_width;
+    es.output_height = target_height;
+    es.fps_num = 29.97;
+    es.fps_den = 1;
+    es.bitrate = 20'000'000;
+    es.hardware = onevr::EncodeHardware::GPU;
+    es.codec = onevr::VideoCodec::HEVC;
+    es.preset = (es.hardware == onevr::EncodeHardware::GPU) ? "p4" : "veryfast";
+
+    onevr::VideoEncoder enc(out_dir + "out.mp4", es);
+
+    int num_frames = 120;
+    for (int i = 0; i < num_frames; ++i) {
+        onevr::FrameRGB L, R;
+        if (!left.read_rgb24(L) || !right.read_rgb24(R)) break;
+        onevr::FrameRGB scaled_l = onevr::scale_rgb24(L, target_width / 2, target_height);
+        onevr::FrameRGB scaled_r = onevr::scale_rgb24(R, target_width / 2, target_height);
+        onevr::FrameRGB sbs = onevr::sbs_rgb(scaled_l, scaled_r);
+        enc.write_rgb24(sbs, /*pts=*/i);
     }
 
-    int i = 0;
-    while (i < 5 && left.read_rgb24(L) && right.read_rgb24(R)) {
-        onevr::write_ppm(out_dir + "/left_" + std::to_string(i) + ".ppm", L);
-        onevr::write_ppm(out_dir + "/right_" + std::to_string(i) + ".ppm", R);
-        ++i;
-    }
+    enc.finish();
 
-    std::cout << "Wrote PPMs into " << out_dir << "\n";
     return 0;
 }
