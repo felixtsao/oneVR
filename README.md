@@ -1,20 +1,19 @@
 # One VR
 <img src="img/doc/banner.jpg" alt="Banner" width="900px"/>
-<h3> A low-cost, DIY, VR/360 video solution </h3>
+<h3> A DIY VR180, 360 video workflow </h3>
 <p>
-A low-cost, virtual reality, 360 camera system along with a mobile web 360 player application, forms an end-to-end solution; from capture to viewing.
+A camera hardware and software framework, forms an end-to-end solution; from capture, processing and playback.
 <p>
-Designs based around using off-the-shelf hardware/software. Parameterized 3D model files allow for easy generation of camera mounts to fit most small, rectangular cameras like GoPro, SJCAM, Xiaomi and NoPro. Parameterization also allows scalability to reach 4K resolution and beyond. The example SJ4000 rig costs less than $500 USD to build and achieves 4K resolution.
+Designs based around using off-the-shelf hardware/software. Parameterized 3D model files allow for easy generation of camera mounts to fit most small, rectangular cameras like GoPro, SJCAM, Xiaomi and NoPro. Parameterization also allows scalability to reach 4K resolution and beyond.
 <p>
-Video stitching methods include using accessible software and custom scripts provided by this repository.
+Video stitching methods include using accessible open-source software and custom scripts provided by this repository.
 <p>
-Project started Spring break 2015 with some good friends and further developed through a Computational Photography class, CS 534. Hardware resources/funding by Garage Physics at University of Wisconsin, Madison.
+This project started Spring break 2015 with some good friends and further developed through a Computational Photography class, CS 534. Hardware resources/funding by Garage Physics at University of Wisconsin, Madison.
 <p>
 <h4> Example results </h4>
 
-[4K 60fps 8x Xiaomi Yi ITE Building](https://www.youtube.com/watch?v=hQ7O1qrUY-8) <br>
-[4K 30fps 7x SJ4000 Vibration Test](https://www.youtube.com/watch?v=YHSJdiMrLIY) <br>
-[4K 30fps 6x SJ4000 Madison Capitol](https://www.youtube.com/watch?v=a_FUM7AA19g)
+[4K 30fps VR180 stereoscopic video](https://www.youtube.com/watch?v=hhlstimBSec&list=PLbWNpbTQem_h6UcD7EMUGMVDucTkWlxWI) <br>
+[4K 60fps 360 monoscopic video](https://www.youtube.com/watch?v=hQ7O1qrUY-8) <br>
 
 <h3> Motivation </h3>
 
@@ -31,11 +30,12 @@ Increasing accessibility of 360 cameras will allow more creative individuals to 
 
 <h3> Directories </h3>
 
-`/360warper` - A standalone image/video warper to be used with video compositing tools like AFX, Blender, Nuke<br>
-`/cam` - 3D printable 360 camera rig files (`.stl`), generator files (`.scad`) and camera control commands <br>
-`/cpp` - Automated video stitching (in development, see video tutorial below for manual solution) <br>
+`/vr180` - VR180 software tooling
+`/360warper` - <b>(Deprecated)</b> A standalone image/video warper to be used with video compositing tools like AFX, Blender, Nuke<br>
+`/cam` - Camera hardware and software configuration. 3D printable 360 camera rig files (`.stl`), generator files (`.scad`) and camera control commands. Camera intrinsics/extrinsics characterization for use in software tooling.<br>
+`/cpp` - <b>(Deprecated)</b> Automated video stitching (in development, see video tutorial below for manual solution) <br>
 `/img` - Documentation, reference and source images <br>
-`/viewer` - Basic VR 360 video/image player for web browsers
+`/viewer` - <b>(Deprecated)</b> Basic VR 360 video/image player for web browsers
 
 <h3> Multi-camera system overview </h3>
 
