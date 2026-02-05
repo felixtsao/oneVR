@@ -1,7 +1,9 @@
 #include <cmath>
 #include <stdexcept>
+#include <iostream>
 
 #include "onevr/uv_map.h"
+#include "onevr/cuda_uv_map.h"
 
 #include "warp.h"
 
@@ -87,3 +89,12 @@ onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, Int
 }
 
 } // namespace onevr::vr180
+
+namespace onevr::vr180::cuda {
+
+onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod interp) {
+    return onevr::cuda::project_bilinear(in, lut);
+}
+
+} // namespace onevr::vr180::cuda
+

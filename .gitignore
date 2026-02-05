@@ -6,6 +6,7 @@ bazel-*
 
 # Bazel user config
 .bazelrc.user
+MODULE.bazel.lock
 
 # Build artifacts
 *.o

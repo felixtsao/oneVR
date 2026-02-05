@@ -8,8 +8,10 @@ namespace onevr {
 struct Uv {
     float u = 0.f;
     float v = 0.f;
-    uint8_t valid = false;
+    uint8_t valid = 0;
+    uint8_t pad[3];
 };
+static_assert(sizeof(Uv) == 12);
 
 using UvMap = Lut2D<Uv>;
 

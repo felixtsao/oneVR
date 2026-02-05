@@ -9,6 +9,7 @@ cc_library(
     includes = ["include"],
     deps = [
         "//util:util",
+        "//util/gpu:cuda_uv_map",
     ],
     copts = ["-std=c++20"],
     visibility = ["//visibility:public"],

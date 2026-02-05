@@ -51,14 +51,14 @@ int main(int argc, char** argv) {
     ws.interpolation_method = onevr::vr180::InterpolationMethod::BILINEAR;
     onevr::UvMap lut = onevr::vr180::create_warp_slut(cam, ws);
 
-    int num_frames = 30;
-    for (int i = 0; i < num_frames; ++i) {
+    int i = 0;
+    while (1) {
         onevr::rgb::Frame L, R;
         if (!left.read(L) || !right.read(R)) break;
-        onevr::rgb::Frame warpedL = onevr::vr180::warp(L, lut, onevr::vr180::InterpolationMethod::BILINEAR);
-        onevr::rgb::Frame warpedR = onevr::vr180::warp(R, lut, onevr::vr180::InterpolationMethod::BILINEAR);
+        onevr::rgb::Frame warpedL = onevr::vr180::cuda::warp(L, lut, onevr::vr180::InterpolationMethod::BILINEAR);
+        onevr::rgb::Frame warpedR = onevr::vr180::cuda::warp(R, lut, onevr::vr180::InterpolationMethod::BILINEAR);
         onevr::rgb::Frame sbs = onevr::cat_sbs(warpedL, warpedR);
-        enc.write(sbs, /*pts=*/i);
+        enc.write(sbs, /*pts=*/i++);
     }
 
     enc.finish();

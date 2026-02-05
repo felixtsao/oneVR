@@ -45,3 +45,9 @@ onevr::UvMap create_warp_slut(const Camera& cam, const Vr180WarpSettings& s);
 onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod type);
 
 } // namespace onevr::vr180
+
+namespace onevr::vr180::cuda {
+
+onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod type);
+
+} // namespace onevr::vr180::cuda
