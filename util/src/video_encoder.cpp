@@ -11,6 +11,7 @@ extern "C" {
 #include <libavutil/opt.h>
 #include <libavutil/imgutils.h>
 #include <libswscale/swscale.h>
+#include <libavutil/hwcontext.h>
 }
 
 namespace onevr {
@@ -47,6 +48,11 @@ struct VideoEncoder::Impl {
     bool finished = false;
 
     AVPixelFormat dst_fmt = AV_PIX_FMT_YUV420P;
+
+    AVBufferRef* hw_device_ctx = nullptr;
+    AVBufferRef* hw_frames_ctx = nullptr;
+    AVFrame* hw_frame = nullptr;  // reusable CUDA frame (or allocate per frame)
+    AVPixelFormat sw_format = AV_PIX_FMT_NV12; // or P010
 };
 
 static const AVCodec* pick_encoder(const EncodeSettings& s) {
@@ -127,41 +133,70 @@ VideoEncoder::VideoEncoder(const std::string& out_path, const EncodeSettings& se
     impl_->enc->gop_size = impl_->s.gop;
     impl_->enc->max_b_frames = 0; // keep simple for now
 
-    // Encoder-specific options (best effort; safe to ignore if unsupported)
-    if (impl_->s.hardware == EncodeHardware::CPU) {
-        // x264 quality/preset. If libx264 isn't the picked encoder, these may be ignored.
-        if (impl_->s.preset.empty()) impl_->s.preset = "veryfast";
-        opt_set_if(impl_->enc, "preset", impl_->s.preset.c_str());
-        opt_set_int_if(impl_->enc, "crf", impl_->s.crf);
-        // "tune=zerolatency" is nice for preview; optional.
-        opt_set_if(impl_->enc, "tune", "zerolatency");
-    } else {
-        // NVENC: prefer constant quality-ish mode if possible
-        // presets differ by build: "p1".."p7" or "fast"/"medium"/"slow".
-        if (impl_->s.preset.empty()) impl_->s.preset = "p4";
-        opt_set_if(impl_->enc, "preset", impl_->s.preset.c_str());
-        opt_set_int_if(impl_->enc, "cq", impl_->s.cq);
-        // Some builds prefer "rc=vbr" or "rc=constqp". We'll set vbr best-effort.
-        opt_set_if(impl_->enc, "rc", "vbr");
-    }
-
     // If the format requires global headers, enable them.
     if (impl_->ofmt->oformat->flags & AVFMT_GLOBALHEADER) {
         impl_->enc->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
     }
 
+    if (impl_->s.hardware == EncodeHardware::GPU) {
+        // Create CUDA device
+        ret = av_hwdevice_ctx_create(
+            &impl_->hw_device_ctx,
+            AV_HWDEVICE_TYPE_CUDA,
+            nullptr, nullptr, 0
+        );
+        if (ret < 0) throw_ff("av_hwdevice_ctx_create(CUDA) failed", ret);
+
+        impl_->sw_format = AV_PIX_FMT_NV12;
+
+        // Allocate CUDA frames pool
+        impl_->hw_frames_ctx = av_hwframe_ctx_alloc(impl_->hw_device_ctx);
+        if (!impl_->hw_frames_ctx)
+            throw std::runtime_error("av_hwframe_ctx_alloc failed");
+
+        auto* frames = (AVHWFramesContext*)impl_->hw_frames_ctx->data;
+        frames->format    = AV_PIX_FMT_CUDA;
+        frames->sw_format = impl_->sw_format;
+        frames->width     = impl_->s.output_width;
+        frames->height    = impl_->s.output_height;
+        frames->initial_pool_size = 8;
+
+        ret = av_hwframe_ctx_init(impl_->hw_frames_ctx);
+        if (ret < 0) throw_ff("av_hwframe_ctx_init failed", ret);
+
+        impl_->enc->pix_fmt       = AV_PIX_FMT_CUDA;
+        impl_->enc->sw_pix_fmt    = impl_->sw_format;
+        impl_->enc->hw_frames_ctx = av_buffer_ref(impl_->hw_frames_ctx);
+        impl_->enc->hw_device_ctx = av_buffer_ref(impl_->hw_device_ctx);
+
+        if (!impl_->enc->hw_frames_ctx || !impl_->enc->hw_device_ctx)
+            throw std::runtime_error("av_buffer_ref failed");
+
+        // NVENC options
+        if (impl_->s.preset.empty()) impl_->s.preset = "p4";
+        opt_set_if(impl_->enc, "preset", impl_->s.preset.c_str());
+        opt_set_int_if(impl_->enc, "cq", impl_->s.cq);
+        opt_set_if(impl_->enc, "rc", "vbr");
+    } else {
+        impl_->dst_fmt = AV_PIX_FMT_YUV420P;
+        impl_->enc->pix_fmt = impl_->dst_fmt;
+
+        if (impl_->s.preset.empty()) impl_->s.preset = "veryfast";
+        opt_set_if(impl_->enc, "preset", impl_->s.preset.c_str());
+        opt_set_int_if(impl_->enc, "crf", impl_->s.crf);
+        opt_set_if(impl_->enc, "tune", "zerolatency");
+    }
+
     ret = avcodec_open2(impl_->enc, impl_->codec, nullptr);
     if (ret < 0) throw_ff("avcodec_open2 failed", ret);
 
-    // Stream time_base should match encoder time_base for clean pts handling.
-    impl_->vstream->time_base = impl_->enc->time_base;
+    impl_->vstream->time_base      = impl_->enc->time_base;
     impl_->vstream->avg_frame_rate = impl_->enc->framerate;
-    impl_->vstream->r_frame_rate = impl_->enc->framerate;
+    impl_->vstream->r_frame_rate   = impl_->enc->framerate;
 
     ret = avcodec_parameters_from_context(impl_->vstream->codecpar, impl_->enc);
     if (ret < 0) throw_ff("avcodec_parameters_from_context failed", ret);
 
-    // Open output file
     if (!(impl_->ofmt->oformat->flags & AVFMT_NOFILE)) {
         ret = avio_open(&impl_->ofmt->pb, out_path.c_str(), AVIO_FLAG_WRITE);
         if (ret < 0) throw_ff("avio_open failed", ret);
@@ -171,26 +206,29 @@ VideoEncoder::VideoEncoder(const std::string& out_path, const EncodeSettings& se
     if (ret < 0) throw_ff("avformat_write_header failed", ret);
     impl_->wrote_header = true;
 
-    // Allocate a reusable output frame in dst pixel format
-    impl_->yuv = av_frame_alloc();
     impl_->pkt = av_packet_alloc();
-    if (!impl_->yuv || !impl_->pkt) throw std::runtime_error("av_frame_alloc/av_packet_alloc failed");
+    if (!impl_->pkt) throw std::runtime_error("av_packet_alloc failed");
 
-    impl_->yuv->format = impl_->dst_fmt;
-    impl_->yuv->width = impl_->s.output_width;
-    impl_->yuv->height = impl_->s.output_height;
+    if (impl_->s.hardware == EncodeHardware::CPU) {
+        impl_->dst_fmt = AV_PIX_FMT_YUV420P;
 
-    ret = av_frame_get_buffer(impl_->yuv, 32);
-    if (ret < 0) throw_ff("av_frame_get_buffer failed", ret);
+        impl_->yuv = av_frame_alloc();
+        if (!impl_->yuv) throw std::runtime_error("av_frame_alloc failed");
 
-    // RGB24 -> dst_fmt swscale
-    impl_->sws = sws_getContext(
-        impl_->s.input_width, impl_->s.input_height, AV_PIX_FMT_RGB24,
-        impl_->s.output_width, impl_->s.output_height, impl_->dst_fmt,
-        SWS_BICUBIC,
-        nullptr, nullptr, nullptr
-    );
-    if (!impl_->sws) throw std::runtime_error("sws_getContext failed");
+        impl_->yuv->format = impl_->dst_fmt;
+        impl_->yuv->width  = impl_->s.output_width;
+        impl_->yuv->height = impl_->s.output_height;
+
+        int ret2 = av_frame_get_buffer(impl_->yuv, 32);
+        if (ret2 < 0) throw_ff("av_frame_get_buffer failed", ret2);
+
+        impl_->sws = sws_getContext(
+            impl_->s.input_width, impl_->s.input_height, AV_PIX_FMT_RGB24,
+            impl_->s.output_width, impl_->s.output_height, impl_->dst_fmt,
+            SWS_BICUBIC, nullptr, nullptr, nullptr
+        );
+        if (!impl_->sws) throw std::runtime_error("sws_getContext failed");
+    }
 }
 
 VideoEncoder::~VideoEncoder() {
