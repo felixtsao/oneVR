@@ -38,8 +38,8 @@ struct Vr180WarpSettings {
     InterpolationMethod interpolation_method = InterpolationMethod::BILINEAR;
 };
 
-// Build starting look-up table which encodes warp/projection characteristics used throughout runtime
-onevr::UvMap create_warp_slut(const Camera& cam, const Vr180WarpSettings& s);
+// Synthesize look-up table which encodes warp/camera projection characteristics used throughout runtime
+onevr::UvMap slut(const Camera& cam, const Vr180WarpSettings& s);
 
 // Map from camera sensor space to VR180 equirectangular and project back to screen space
 onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod type);
@@ -49,6 +49,6 @@ onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, Int
 namespace onevr::vr180::cuda {
 
 onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod type);
-void warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod type, uint8_t* target);
+void warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, int lut_x_offset, InterpolationMethod type, uint8_t* target);
 
 } // namespace onevr::vr180::cuda

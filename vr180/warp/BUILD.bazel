@@ -1,7 +1,7 @@
 cc_library(
     name = "warp_lib",
     srcs = [
-        "src/warp_slut.cpp",
+        "src/warp.cpp",
     ],
     hdrs = [
         "include/warp.h",

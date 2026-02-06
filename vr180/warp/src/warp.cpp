@@ -15,12 +15,12 @@ static inline float deg2rad(float d) {
     return d * static_cast<float>(PI) / 180.0f;
 }
 
-onevr::UvMap create_warp_slut(const Camera& cam, const Vr180WarpSettings& s) {
+onevr::UvMap slut(const Camera& cam, const Vr180WarpSettings& s) {
 
     if (cam.width <= 0 || cam.height <= 0) throw std::runtime_error("create_warp_slut: invalid camera dimensions");
     if (s.eye_width <= 0 || s.eye_height <= 0) throw std::runtime_error("create_warp_slut: invalid eye dimensions");
     if (cam.hfov_degrees <= 0.0f || cam.hfov_degrees >= 180.0f) throw std::runtime_error("hfov_deg must be in (0, 180)");
-    
+
     const float hfov_radians = deg2rad(cam.hfov_degrees);
     if (hfov_radians <= 0.0f || hfov_radians >= 3.13f) throw std::runtime_error("create_warp_slut: hfov_rad out of range");
 
@@ -95,18 +95,14 @@ onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, Int
 
 namespace onevr::vr180::cuda {
 
-/*
- * Warp using GPU but does H2D io/copies back to CPU
- */
+// Warp using GPU but does H2D io/copies back to CPU
 onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod interp) {
     return onevr::cuda::project_bilinear(in, lut);
 }
 
-/*
- * Warp in-place on GPU memory
- */
-void warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod interp, uint8_t* target) {
-    onevr::cuda::project_bilinear(in, lut, target);
+// Warp in-place on GPU memory
+void warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, int lut_x_offset, InterpolationMethod interp, uint8_t* target) {
+    onevr::cuda::project_bilinear(in, lut, lut_x_offset, target);
 }
 
 } // namespace onevr::vr180::cuda

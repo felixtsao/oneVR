@@ -85,6 +85,51 @@ __global__ void project_bilinear(
   }
 }
 
+__global__ void project_bilinear_sbs(
+  const uint8_t* __restrict__ src,
+  int src_w, int src_h,
+  const Uv* __restrict__ lut,   // eye_w * eye_h
+  int eye_w, int eye_h,
+  int sbs_w, int dst_x_offset,
+  uint8_t* __restrict__ dst)    // sbs_w * eye_h * 3
+{
+  int x = blockIdx.x * blockDim.x + threadIdx.x; // 0..eye_w-1
+  int y = blockIdx.y * blockDim.y + threadIdx.y; // 0..eye_h-1
+  if (x >= eye_w || y >= eye_h) return;
+
+  // LUT INDEX MUST BE EYE SPACE:
+  const Uv uv = lut[y * eye_w + x];
+
+  int out_x = x + dst_x_offset;
+  int o = (y * sbs_w + out_x) * 3;
+
+  if (!uv.valid) { dst[o]=0; dst[o+1]=0; dst[o+2]=0; return; }
+
+  float fx = uv.u, fy = uv.v;
+  if (!isfinite(fx) || !isfinite(fy)) { dst[o]=0; dst[o+1]=0; dst[o+2]=0; return; }
+  if (fx < 0.f || fx > (src_w - 1) || fy < 0.f || fy > (src_h - 1)) { dst[o]=0; dst[o+1]=0; dst[o+2]=0; return; }
+
+  int x0 = (int)floorf(fx), y0 = (int)floorf(fy);
+  int x1 = min(x0 + 1, src_w - 1);
+  int y1 = min(y0 + 1, src_h - 1);
+
+  float tx = fx - x0, ty = fy - y0;
+  float w00 = (1.f - tx) * (1.f - ty);
+  float w10 = tx * (1.f - ty);
+  float w01 = (1.f - tx) * ty;
+  float w11 = tx * ty;
+
+  int i00 = (y0 * src_w + x0) * 3;
+  int i10 = (y0 * src_w + x1) * 3;
+  int i01 = (y1 * src_w + x0) * 3;
+  int i11 = (y1 * src_w + x1) * 3;
+
+  for (int c=0; c<3; ++c) {
+    float vv = w00*src[i00+c] + w10*src[i10+c] + w01*src[i01+c] + w11*src[i11+c];
+    dst[o+c] = clamp_u8((int)lrintf(vv));
+  }
+}
+
 rgb::Frame project_bilinear(const rgb::Frame& src, const UvMap& lut) {
   const int out_w = lut.width;
   const int out_h = lut.height;
@@ -130,7 +175,7 @@ rgb::Frame project_bilinear(const rgb::Frame& src, const UvMap& lut) {
   return dst;
 }
 
-void project_bilinear(const rgb::Frame& src, const UvMap& lut, uint8_t* out) {
+void project_bilinear(const rgb::Frame& src, const UvMap& lut, int lut_x_offset, uint8_t* target) {
   const int out_w = lut.width;
   const int out_h = lut.height;
 
@@ -149,10 +194,11 @@ void project_bilinear(const rgb::Frame& src, const UvMap& lut, uint8_t* out) {
   dim3 block(16,16);
   dim3 grid((out_w + block.x - 1)/block.x, (out_h + block.y - 1)/block.y);
 
-  project_bilinear<<<grid, block>>>(
+  project_bilinear_sbs<<<grid, block>>>(
       d_src, src.width, src.height,
-      d_lut, out_w, out_h,
-      out);
+      d_lut, lut.width, lut.height,
+      2 * lut.width, lut_x_offset,
+      target);
 
   handle_cuda_error(cudaGetLastError(), "warp kernel");
   handle_cuda_error(cudaDeviceSynchronize(), "warp sync");
