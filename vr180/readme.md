@@ -19,9 +19,7 @@ Generates `out.mp4` which can be decoded and viewed in a VR headset video player
 <h4>Getting Started</h4>
 
 To build and run this software requires a Linux OS.
-<p>
 Optionally, Nvidia GPUs which are supported by CUDA tookit can be used for hardware acceleration.
-<p>
 Clone this repository and install/verify dependencies with the `scripts/setup_runpod.sh` on a Linux distro (e.g. Ubuntu 24.04) or containerized cloud instance like [Runpod](https://console.runpod.io/deploy).
 ```
 ./setup_runpod.sh
