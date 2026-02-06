@@ -4,6 +4,8 @@
 #include <cstring>
 #include <string>
 
+#include <cuda_runtime.h>
+
 #include "onevr/image_processing.h"
 #include "onevr/video_decoder.h"
 #include "onevr/video_encoder.h"
@@ -29,9 +31,9 @@ int main(int argc, char** argv) {
     onevr::VideoDecoder right(right_path);
 
     onevr::EncodeSettings es;
-    es.input_width = 8192;
+    es.input_width = 4096;
     es.input_height = 4096;
-    es.output_width = 8192;
+    es.output_width = 4096;
     es.output_height = 4096;
     es.fps_num = 30000;
     es.fps_den = 1001;
@@ -55,10 +57,23 @@ int main(int argc, char** argv) {
     while (1) {
         onevr::rgb::Frame L, R;
         if (!left.read(L) || !right.read(R)) break;
-        onevr::rgb::Frame warpedL = onevr::vr180::cuda::warp(L, lut, onevr::vr180::InterpolationMethod::BILINEAR);
-        onevr::rgb::Frame warpedR = onevr::vr180::cuda::warp(R, lut, onevr::vr180::InterpolationMethod::BILINEAR);
-        onevr::rgb::Frame sbs = onevr::cat_sbs(warpedL, warpedR);
-        enc.write(sbs, /*pts=*/i++);
+        switch(es.hardware) {
+            case onevr::EncodeHardware::CPU: {
+                onevr::rgb::Frame warpedL = onevr::vr180::cuda::warp(L, lut, onevr::vr180::InterpolationMethod::BILINEAR);
+                onevr::rgb::Frame warpedR = onevr::vr180::cuda::warp(R, lut, onevr::vr180::InterpolationMethod::BILINEAR);
+                onevr::rgb::Frame sbs = onevr::cat_sbs(warpedL, warpedR);
+                enc.write(sbs, /*pts=*/i++);
+                break;
+            }
+            case onevr::EncodeHardware::GPU: {
+                uint8_t* warped_l = nullptr;
+                size_t warped_l_bytes = (size_t)es.output_width * es.output_height * 3;
+                cudaMalloc(&warped_l, warped_l_bytes);
+                onevr::vr180::cuda::warp(L, lut, onevr::vr180::InterpolationMethod::BILINEAR, warped_l);
+                enc.write_gpu(warped_l, /*pts=*/i++);
+                break;
+            }
+        }
     }
 
     enc.finish();

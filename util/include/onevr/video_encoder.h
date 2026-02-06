@@ -49,11 +49,13 @@ public:
 
     // pts is in encoder time_base ticks (we set time_base = fps_den/fps_num, so pts = frame_index works).
     void write(const rgb::Frame& frame, int64_t pts);
+    void write_gpu(uint8_t* frame, int64_t pts);
 
     // Flush and finalize file (also called by destructor, but explicit is nice).
     void finish();
 
 private:
+    void drain_packets();
     struct Impl;
     Impl* impl_ = nullptr;
 };

@@ -1,6 +1,7 @@
 #include "onevr/cuda_uv_map.h"
 
 #include <cuda_runtime.h>
+#include <stdint.h>
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
@@ -127,6 +128,93 @@ rgb::Frame project_bilinear(const rgb::Frame& src, const UvMap& lut) {
   cudaFree(d_lut);
 
   return dst;
+}
+
+void project_bilinear(const rgb::Frame& src, const UvMap& lut, uint8_t* out) {
+  const int out_w = lut.width;
+  const int out_h = lut.height;
+
+  const size_t src_bytes = (size_t)src.width * src.height * 3;
+  const size_t lut_bytes = (size_t)out_w * out_h * sizeof(Uv);
+
+  uint8_t* d_src = nullptr;
+  Uv* d_lut = nullptr;
+
+  handle_cuda_error(cudaMalloc(&d_src, src_bytes), "cudaMalloc d_src");
+  handle_cuda_error(cudaMalloc(&d_lut, lut_bytes), "cudaMalloc d_lut");
+
+  handle_cuda_error(cudaMemcpy(d_src, src.data.data(), src_bytes, cudaMemcpyHostToDevice), "H2D src");
+  handle_cuda_error(cudaMemcpy(d_lut, lut.data.data(), lut_bytes, cudaMemcpyHostToDevice), "H2D lut");
+
+  dim3 block(16,16);
+  dim3 grid((out_w + block.x - 1)/block.x, (out_h + block.y - 1)/block.y);
+
+  project_bilinear<<<grid, block>>>(
+      d_src, src.width, src.height,
+      d_lut, out_w, out_h,
+      out);
+
+  handle_cuda_error(cudaGetLastError(), "warp kernel");
+  handle_cuda_error(cudaDeviceSynchronize(), "warp sync");
+
+  cudaFree(d_src);
+  cudaFree(d_lut);
+
+}
+
+// BT.709
+__global__ void rgb_to_nv12_into_hw_kernel(
+    const uint8_t* __restrict__ rgb,  // tight: (y*w + x)*3
+    int w, int h,
+    uint8_t* __restrict__ y_plane, int y_pitch,
+    uint8_t* __restrict__ uv_plane, int uv_pitch)
+{
+  int x  = blockIdx.x * blockDim.x + threadIdx.x;
+  int yy = blockIdx.y * blockDim.y + threadIdx.y;
+  if (x >= w || yy >= h) return;
+
+  const uint8_t* p = rgb + (yy * w + x) * 3;
+  int R = p[0], G = p[1], B = p[2];
+
+  // Y' (limited range)
+  int Y = (( 47*R + 157*G +  16*B + 128) >> 8) + 16;
+  y_plane[yy * y_pitch + x] = clamp_u8(Y);
+
+  // UV once per 2x2 block
+  if (((x & 1) == 0) && ((yy & 1) == 0) && (x + 1 < w) && (yy + 1 < h)) {
+    int sumR=0, sumG=0, sumB=0;
+
+    #pragma unroll
+    for (int dy=0; dy<2; ++dy) {
+      #pragma unroll
+      for (int dx=0; dx<2; ++dx) {
+        const uint8_t* q = rgb + ((yy + dy) * w + (x + dx)) * 3;
+        sumR += q[0]; sumG += q[1]; sumB += q[2];
+      }
+    }
+    int r = (sumR + 2) >> 2;
+    int g = (sumG + 2) >> 2;
+    int b = (sumB + 2) >> 2;
+
+    int U = ((-26*r - 87*g + 112*b + 128) >> 8) + 128;
+    int V = ((112*r - 102*g - 10*b + 128) >> 8) + 128;
+
+    int uv_y = yy >> 1;
+    uint8_t* row = uv_plane + uv_y * uv_pitch;
+    row[x + 0] = clamp_u8(U);
+    row[x + 1] = clamp_u8(V);
+  }
+}
+
+extern "C" void rgb_to_nv12_into_hw(
+    const uint8_t* rgb, int w, int h,
+    uint8_t* y_plane, int y_pitch,
+    uint8_t* uv_plane, int uv_pitch)
+{
+  dim3 block(32, 8);
+  dim3 grid((w + block.x - 1) / block.x,
+            (h + block.y - 1) / block.y);
+  rgb_to_nv12_into_hw_kernel<<<grid, block>>>(rgb, w, h, y_plane, y_pitch, uv_plane, uv_pitch);
 }
 
 }  // namespace onevr::cuda

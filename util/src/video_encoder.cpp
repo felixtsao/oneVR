@@ -4,6 +4,7 @@
 #include <cstring>
 #include <stdexcept>
 #include <string>
+#include <stdint.h>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -12,6 +13,12 @@ extern "C" {
 #include <libavutil/imgutils.h>
 #include <libswscale/swscale.h>
 #include <libavutil/hwcontext.h>
+#include <libavutil/frame.h>
+
+void rgb_to_nv12_into_hw(
+    const uint8_t* rgb, int w, int h,
+    uint8_t* y_plane, int y_pitch,
+    uint8_t* uv_plane, int uv_pitch);
 }
 
 namespace onevr {
@@ -307,6 +314,59 @@ void VideoEncoder::write(const rgb::Frame& frame, int64_t pts) {
     }
 }
 
+void VideoEncoder::write_gpu(uint8_t* frame, int64_t pts) {
+    // 1) Allocate hwframe from pool
+    if (!impl_->hw_frame) {
+        impl_->hw_frame = av_frame_alloc();
+        if (!impl_->hw_frame) throw std::runtime_error("av_frame_alloc failed");
+    }
+    
+    av_frame_unref(impl_->hw_frame);
+    impl_->hw_frame->format = AV_PIX_FMT_CUDA;
+    impl_->hw_frame->width  = impl_->s.output_width;
+    impl_->hw_frame->height = impl_->s.output_height;
+    
+    int ret = av_hwframe_get_buffer(impl_->hw_frames_ctx, impl_->hw_frame, 0);
+    if (ret < 0) throw_ff("av_hwframe_get_buffer failed", ret);
+    
+    // 2) Convert warped RGB device buffer into NV12 hwframe planes
+    // d_dst is warped RGB device pointer (tight packed)
+    uint8_t* d_dst = frame;
+    rgb_to_nv12_into_hw(
+        d_dst, impl_->s.output_width, impl_->s.output_height,
+        impl_->hw_frame->data[0], impl_->hw_frame->linesize[0],
+        impl_->hw_frame->data[1], impl_->hw_frame->linesize[1]);
+    
+    // 3) Encode
+    impl_->hw_frame->pts = pts;
+    
+    ret = avcodec_send_frame(impl_->enc, impl_->hw_frame);
+
+    if (ret == AVERROR(EAGAIN)) {
+        // encoder needs to drain packets first
+        drain_packets();
+        ret = avcodec_send_frame(impl_->enc, impl_->hw_frame);
+    }
+    if (ret < 0) throw_ff("avcodec_send_frame(hw) failed", ret);
+
+    drain_packets();
+}
+
+void VideoEncoder::drain_packets() {
+    while (true) {
+        int ret = avcodec_receive_packet(impl_->enc, impl_->pkt);
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) return;
+        if (ret < 0) throw_ff("avcodec_receive_packet failed", ret);
+
+        av_packet_rescale_ts(impl_->pkt, impl_->enc->time_base, impl_->vstream->time_base);
+        impl_->pkt->stream_index = impl_->vstream->index;
+
+        int wret = av_interleaved_write_frame(impl_->ofmt, impl_->pkt);
+        av_packet_unref(impl_->pkt);
+        if (wret < 0) throw_ff("av_interleaved_write_frame failed", wret);
+    }
+}
+
 void VideoEncoder::finish() {
     if (!impl_ || impl_->finished) return;
 
@@ -314,18 +374,7 @@ void VideoEncoder::finish() {
     int ret = avcodec_send_frame(impl_->enc, nullptr);
     if (ret < 0) throw_ff("avcodec_send_frame(flush) failed", ret);
 
-    while (true) {
-        ret = avcodec_receive_packet(impl_->enc, impl_->pkt);
-        if (ret == AVERROR_EOF || ret == AVERROR(EAGAIN)) break;
-        if (ret < 0) throw_ff("avcodec_receive_packet(flush) failed", ret);
-
-        av_packet_rescale_ts(impl_->pkt, impl_->enc->time_base, impl_->vstream->time_base);
-        impl_->pkt->stream_index = impl_->vstream->index;
-
-        int wret = av_interleaved_write_frame(impl_->ofmt, impl_->pkt);
-        av_packet_unref(impl_->pkt);
-        if (wret < 0) throw_ff("av_interleaved_write_frame(flush) failed", wret);
-    }
+    drain_packets();
 
     av_write_trailer(impl_->ofmt);
     impl_->finished = true;
