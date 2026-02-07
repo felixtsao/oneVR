@@ -1,10 +1,10 @@
 #pragma once
 
+#include "onevr/frame.h"
+#include "onevr/uv_map.h"
+
 #include <cstddef>
 #include <cstdint>
-
-#include "onevr/uv_map.h"
-#include "onevr/frame.h"
 
 namespace onevr::cuda {
 
@@ -14,4 +14,4 @@ rgb::Frame project_bilinear(const rgb::Frame& src, const UvMap& lut);
 // Projection map with bilinear sampling in-place on GDDR
 void project_bilinear(const rgb::Frame& src, const UvMap& lut, int lut_x_offset, uint8_t* out);
 
-}  // namespace onevr::cuda
+} // namespace onevr::cuda

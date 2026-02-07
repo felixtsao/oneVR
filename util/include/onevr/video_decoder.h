@@ -1,12 +1,13 @@
 #pragma once
-#include <string>
 #include "onevr/frame.h"
+
+#include <string>
 
 namespace onevr {
 
 // Simple streaming video decoder that outputs RGB24 frames.
 class VideoDecoder {
-public:
+  public:
     explicit VideoDecoder(const std::string& path);
     ~VideoDecoder();
 
@@ -19,7 +20,7 @@ public:
     int width() const { return width_; }
     int height() const { return height_; }
 
-private:
+  private:
     struct Impl;
     Impl* impl_ = nullptr;
 
@@ -30,4 +31,4 @@ private:
     int rgb_stride_ = 0;
 };
 
-}  // namespace onevr
+} // namespace onevr

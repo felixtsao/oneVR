@@ -14,4 +14,4 @@ inline std::string ff_err(int errnum) {
     return std::string(buf);
 }
 
-}  // namespace onevr
+} // namespace onevr

@@ -1,18 +1,15 @@
-#include <filesystem>
-#include <iostream>
-#include <stdexcept>
-#include <cstring>
-#include <string>
-
-#include <cuda_runtime.h>
-
+#include "onevr/frame.h"
 #include "onevr/image_processing.h"
 #include "onevr/video_decoder.h"
 #include "onevr/video_encoder.h"
-#include "onevr/frame.h"
-
 #include "warp.h"
 
+#include <cstring>
+#include <cuda_runtime.h>
+#include <filesystem>
+#include <iostream>
+#include <stdexcept>
+#include <string>
 
 int main(int argc, char** argv) {
 
@@ -56,21 +53,30 @@ int main(int argc, char** argv) {
     int i = 0;
     while (1) {
         onevr::rgb::Frame L, R;
-        if (!left.read(L) || !right.read(R)) break;
-        switch(es.hardware) {
+        if (!left.read(L) || !right.read(R))
+            break;
+        switch (es.hardware) {
             case onevr::EncodeHardware::CPU: {
-                onevr::rgb::Frame warpedL = onevr::vr180::cuda::warp(L, lut, onevr::vr180::InterpolationMethod::BILINEAR);
-                onevr::rgb::Frame warpedR = onevr::vr180::cuda::warp(R, lut, onevr::vr180::InterpolationMethod::BILINEAR);
+                onevr::rgb::Frame warpedL =
+                    onevr::vr180::cuda::warp(L, lut, onevr::vr180::InterpolationMethod::BILINEAR);
+                onevr::rgb::Frame warpedR =
+                    onevr::vr180::cuda::warp(R, lut, onevr::vr180::InterpolationMethod::BILINEAR);
                 onevr::rgb::Frame sbs = onevr::cat_sbs(warpedL, warpedR);
                 enc.write(sbs, /*pts=*/i++);
                 break;
             }
             case onevr::EncodeHardware::GPU: {
                 uint8_t* sbs_composite = nullptr;
-                size_t sbs_composite_bytes = (size_t)es.output_width * es.output_height * 3;  // 3 channel RGB
+                size_t sbs_composite_bytes =
+                    (size_t)es.output_width * es.output_height * 3; // 3 channel RGB
                 cudaMalloc(&sbs_composite, sbs_composite_bytes);
-                onevr::vr180::cuda::warp(L, lut, 0, onevr::vr180::InterpolationMethod::BILINEAR, sbs_composite);
-                onevr::vr180::cuda::warp(R, lut, ws.eye_width, onevr::vr180::InterpolationMethod::BILINEAR, sbs_composite);
+                onevr::vr180::cuda::warp(
+                    L, lut, 0, onevr::vr180::InterpolationMethod::BILINEAR, sbs_composite);
+                onevr::vr180::cuda::warp(R,
+                                         lut,
+                                         ws.eye_width,
+                                         onevr::vr180::InterpolationMethod::BILINEAR,
+                                         sbs_composite);
                 enc.write_gpu(sbs_composite, /*pts=*/i++);
                 break;
             }

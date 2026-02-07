@@ -1,7 +1,8 @@
 #pragma once
-#include <cstdint>
-#include "onevr/lut.h"
 #include "onevr/frame.h"
+#include "onevr/lut.h"
+
+#include <cstdint>
 
 namespace onevr {
 

@@ -1,10 +1,11 @@
 #include "onevr/image_processing.h"
+
 #include <cstring>
 #include <stdexcept>
 
 extern "C" {
-#include <libswscale/swscale.h>
 #include <libavutil/pixfmt.h>
+#include <libswscale/swscale.h>
 }
 
 namespace onevr {
@@ -35,4 +36,4 @@ rgb::Frame cat_sbs(const onevr::rgb::Frame& L, const onevr::rgb::Frame& R) {
     return out;
 }
 
-}  // namespace onevr
+} // namespace onevr

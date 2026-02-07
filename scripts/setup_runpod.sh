@@ -38,7 +38,8 @@ if command -v apt-get >/dev/null 2>&1; then
     libavformat-dev \
     libavutil-dev \
     libswscale-dev \
-    libswresample-dev
+    libswresample-dev \
+    libyaml-cpp-dev
 else
   echo "ERROR: apt-get not found (expected Ubuntu/Debian)"
   exit 1

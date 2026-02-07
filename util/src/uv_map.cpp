@@ -4,18 +4,26 @@
 #include <stdexcept>
 
 namespace onevr {
-static inline int idx(int x, int y, int w) { return y * w + x; }
+static inline int idx(int x, int y, int w) {
+    return y * w + x;
+}
 static inline uint8_t clamp_u8(int v) {
-    if (v < 0) return 0;
-    if (v > 255) return 255;
+    if (v < 0)
+        return 0;
+    if (v > 255)
+        return 255;
     return static_cast<uint8_t>(v);
 }
 
 rgb::Frame project_nearest(const rgb::Frame& in, const UvMap& lut) {
-    if (in.width <= 0 || in.height <= 0) throw std::runtime_error("warp_nearest: invalid input dims");
-    if (in.stride < in.width * 3) throw std::runtime_error("warp_nearest: invalid input stride");
-    if (lut.width <= 0 || lut.height <= 0) throw std::runtime_error("warp_nearest: invalid lut dims");
-    if (static_cast<int>(lut.data.size()) != lut.width * lut.height) throw std::runtime_error("warp_nearest: lut size mismatch");
+    if (in.width <= 0 || in.height <= 0)
+        throw std::runtime_error("warp_nearest: invalid input dims");
+    if (in.stride < in.width * 3)
+        throw std::runtime_error("warp_nearest: invalid input stride");
+    if (lut.width <= 0 || lut.height <= 0)
+        throw std::runtime_error("warp_nearest: invalid lut dims");
+    if (static_cast<int>(lut.data.size()) != lut.width * lut.height)
+        throw std::runtime_error("warp_nearest: lut size mismatch");
 
     rgb::Frame out;
     out.width = lut.width;
@@ -53,10 +61,14 @@ rgb::Frame project_nearest(const rgb::Frame& in, const UvMap& lut) {
 }
 
 rgb::Frame project_bilinear(const rgb::Frame& in, const UvMap& lut) {
-    if (in.width <= 0 || in.height <= 0) throw std::runtime_error("warp_bilinear: invalid input dims");
-    if (in.stride < in.width * 3) throw std::runtime_error("warp_bilinear: invalid input stride");
-    if (lut.width <= 0 || lut.height <= 0) throw std::runtime_error("warp_bilinear: invalid lut dims");
-    if (static_cast<int>(lut.data.size()) != lut.width * lut.height) throw std::runtime_error("warp_bilinear: lut size mismatch");
+    if (in.width <= 0 || in.height <= 0)
+        throw std::runtime_error("warp_bilinear: invalid input dims");
+    if (in.stride < in.width * 3)
+        throw std::runtime_error("warp_bilinear: invalid input stride");
+    if (lut.width <= 0 || lut.height <= 0)
+        throw std::runtime_error("warp_bilinear: invalid lut dims");
+    if (static_cast<int>(lut.data.size()) != lut.width * lut.height)
+        throw std::runtime_error("warp_bilinear: lut size mismatch");
 
     rgb::Frame out;
     out.width = lut.width;

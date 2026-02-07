@@ -35,5 +35,6 @@ cc_binary(
         "-lavutil",
         "-lswscale",
         "-lswresample",
+        "-lyaml-cpp",
     ],
 )

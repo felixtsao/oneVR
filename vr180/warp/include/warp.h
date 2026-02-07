@@ -1,17 +1,14 @@
 #pragma once
-#include <cstdint>
-
-#include "onevr/uv_map.h"
 #include "onevr/frame.h"
+#include "onevr/uv_map.h"
+
+#include <cstdint>
 
 namespace onevr::vr180 {
 
 static const float PI = 3.14159265358979323846;
 
-enum class InterpolationMethod {
-    NEAREST_NEIGHBOR,
-    BILINEAR
-};
+enum class InterpolationMethod { NEAREST_NEIGHBOR, BILINEAR };
 
 struct Camera {
     // Sensor dimensions (pixels)
@@ -38,17 +35,24 @@ struct Vr180WarpSettings {
     InterpolationMethod interpolation_method = InterpolationMethod::BILINEAR;
 };
 
-// Synthesize look-up table which encodes warp/camera projection characteristics used throughout runtime
+// Synthesize look-up table which encodes warp/camera projection characteristics used throughout
+// runtime
 onevr::UvMap slut(const Camera& cam, const Vr180WarpSettings& s);
 
 // Map from camera sensor space to VR180 equirectangular and project back to screen space
-onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod type);
+onevr::rgb::Frame
+warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod type);
 
 } // namespace onevr::vr180
 
 namespace onevr::vr180::cuda {
 
-onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod type);
-void warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, int lut_x_offset, InterpolationMethod type, uint8_t* target);
+onevr::rgb::Frame
+warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod type);
+void warp(const onevr::rgb::Frame& in,
+          const onevr::UvMap& lut,
+          int lut_x_offset,
+          InterpolationMethod type,
+          uint8_t* target);
 
 } // namespace onevr::vr180::cuda
