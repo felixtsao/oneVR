@@ -60,6 +60,55 @@ echo "Bazel version:"
 bazel version
 
 echo
+echo "==== CUDA / nvcc setup ===="
+
+# ---- System sanity ----
+if ! command -v lsb_release >/dev/null; then
+  echo "Installing lsb-release..."
+  apt-get update
+  apt-get install -y lsb-release
+fi
+
+UBUNTU_VER="$(lsb_release -rs)"
+echo "Detected Ubuntu ${UBUNTU_VER}"
+
+# ---- NVIDIA CUDA repo (official) ----
+if [ ! -f /etc/apt/sources.list.d/cuda.list ]; then
+  echo "Adding NVIDIA CUDA apt repository..."
+
+  curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub \
+    | gpg --dearmor -o /usr/share/keyrings/cuda-archive-keyring.gpg
+
+  echo "deb [signed-by=/usr/share/keyrings/cuda-archive-keyring.gpg] \
+https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /" \
+    > /etc/apt/sources.list.d/cuda.list
+fi
+
+apt-get update
+
+# ---- Install nvcc + minimal runtime ----
+CUDA_VERSION="12-4"
+
+apt-get install -y \
+  cuda-nvcc-${CUDA_VERSION} \
+  cuda-cudart-dev-${CUDA_VERSION}
+
+# ---- Symlink /usr/local/cuda if missing ----
+if [ ! -e /usr/local/cuda ]; then
+  echo "Creating /usr/local/cuda symlink..."
+  ln -s /usr/local/cuda-${CUDA_VERSION/./} /usr/local/cuda || true
+fi
+
+# ---- Environment (for current shell + future) ----
+if ! grep -q "/usr/local/cuda/bin" /etc/profile.d/cuda.sh 2>/dev/null; then
+  cat <<'EOF' > /etc/profile.d/cuda.sh
+export CUDA_HOME=/usr/local/cuda
+export PATH=/usr/local/cuda/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/cuda/lib64:${LD_LIBRARY_PATH:-}
+EOF
+fi
+
+echo
 echo "=== Verifying CUDA environment ==="
 
 echo

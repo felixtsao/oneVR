@@ -1,9 +1,9 @@
 {
     files: {
-        camera_config: /workspace/dev/oneVR/cam/gopro_hero_12/config.yaml,
-        input_left: /workspace/dev/data/left.mp4,
-        input_right: /workspace/dev/data/right.mp4,
-        output_directory: /workspace/dev/data/,
+        camera_config: /workspace/oneVR/cam/gopro_hero_12/config.yaml,
+        input_left: /workspace/data/left.mp4,
+        input_right: /workspace/data/right.mp4,
+        output_directory: /workspace/data/,
         output_composite: composite_3D_SBS_LR.mp4
     },
     output_settings: {
