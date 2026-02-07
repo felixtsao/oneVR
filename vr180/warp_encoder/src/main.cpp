@@ -15,11 +15,11 @@
 int main(int argc, char** argv) {
 
     if (argc < 2) {
-        std::cerr << "usage: warp_encoder /vr180/warp_encoder/config.yaml\n";
+        std::cerr << "usage: warp_encoder vr180/warp_encoder/config.yaml\n";
         return 1;
     }
 
-    const std::string config_path = "/workspace/dev/oneVR/vr180/warp/config.yaml";
+    const std::string config_path = argv[1];
     onevr::vr180::Config config = onevr::vr180::LoadConfigYaml(config_path);
 
     onevr::VideoDecoder decoder_left(config.files.input_left);

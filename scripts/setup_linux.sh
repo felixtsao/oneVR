@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Setup script for runpods with Nvidia CUDA supported GPUs
+# Setup script for Linux and runpods with Nvidia CUDA supported GPUs
 # e.g. RTX 3090 from https://console.runpod.io/deploy
 
 
@@ -25,7 +25,7 @@ echo "Kernel version:"
 uname -r
 
 echo
-echo "=== Installing system dependencies (runpod config) ==="
+echo "=== Installing system dependencies (Linux config) ==="
 
 if command -v apt-get >/dev/null 2>&1; then
   apt-get update
