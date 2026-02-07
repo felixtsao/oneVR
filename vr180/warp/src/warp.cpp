@@ -87,8 +87,7 @@ onevr::UvMap slut(const Camera& cam, const WarpSettings& s) {
 /*
  * Warp using CPU
  */
-onevr::rgb::Frame
-warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod interp) {
+onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod interp) {
     switch (interp) {
         case InterpolationMethod::NEAREST_NEIGHBOR:
             return onevr::project_nearest(in, lut);
@@ -103,8 +102,7 @@ warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod i
 namespace onevr::vr180::cuda {
 
 // Warp using GPU but does H2D io/copies back to CPU
-onevr::rgb::Frame
-warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod interp) {
+onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod interp) {
     return onevr::cuda::project_bilinear(in, lut);
 }
 

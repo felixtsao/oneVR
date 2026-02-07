@@ -52,19 +52,14 @@ struct WarpSettings {
 onevr::UvMap slut(const Camera& cam, const WarpSettings& s);
 
 // Map from camera sensor space to VR180 equirectangular and project back to screen space
-onevr::rgb::Frame
-warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod type);
+onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod type);
 
 } // namespace onevr::vr180
 
 namespace onevr::vr180::cuda {
 
-onevr::rgb::Frame
-warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod type);
-void warp(const onevr::rgb::Frame& in,
-          const onevr::UvMap& lut,
-          int lut_x_offset,
-          InterpolationMethod type,
-          uint8_t* target);
+onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod type);
+void warp(
+    const onevr::rgb::Frame& in, const onevr::UvMap& lut, int lut_x_offset, InterpolationMethod type, uint8_t* target);
 
 } // namespace onevr::vr180::cuda

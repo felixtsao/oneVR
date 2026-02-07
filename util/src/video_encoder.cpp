@@ -16,13 +16,8 @@ extern "C" {
 #include <libavutil/opt.h>
 #include <libswscale/swscale.h>
 
-void rgb_to_nv12_into_hw(const uint8_t* rgb,
-                         int w,
-                         int h,
-                         uint8_t* y_plane,
-                         int y_pitch,
-                         uint8_t* uv_plane,
-                         int uv_pitch);
+void rgb_to_nv12_into_hw(
+    const uint8_t* rgb, int w, int h, uint8_t* y_plane, int y_pitch, uint8_t* uv_plane, int uv_pitch);
 }
 
 namespace onevr {
@@ -161,8 +156,7 @@ VideoEncoder::VideoEncoder(const std::string& out_path, const EncodeSettings& se
 
     if (impl_->s.hardware == EncodeHardware::GPU) {
         // Create CUDA device
-        ret = av_hwdevice_ctx_create(
-            &impl_->hw_device_ctx, AV_HWDEVICE_TYPE_CUDA, nullptr, nullptr, 0);
+        ret = av_hwdevice_ctx_create(&impl_->hw_device_ctx, AV_HWDEVICE_TYPE_CUDA, nullptr, nullptr, 0);
         if (ret < 0)
             throw_ff("av_hwdevice_ctx_create(CUDA) failed", ret);
 
@@ -319,13 +313,7 @@ void VideoEncoder::write(const rgb::Frame& frame, int64_t pts) {
     const uint8_t* src_slices[4] = {frame.data.data(), nullptr, nullptr, nullptr};
     int src_stride[4] = {frame.stride, 0, 0, 0};
 
-    sws_scale(impl_->sws,
-              src_slices,
-              src_stride,
-              0,
-              impl_->s.output_height,
-              impl_->yuv->data,
-              impl_->yuv->linesize);
+    sws_scale(impl_->sws, src_slices, src_stride, 0, impl_->s.output_height, impl_->yuv->data, impl_->yuv->linesize);
 
     impl_->yuv->pts = pts;
 

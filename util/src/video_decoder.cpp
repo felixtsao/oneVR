@@ -47,8 +47,7 @@ VideoDecoder::VideoDecoder(const std::string& path) {
     if (ret < 0)
         throw_ff("avformat_find_stream_info failed", ret);
 
-    impl_->video_stream_index =
-        av_find_best_stream(impl_->fmt, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
+    impl_->video_stream_index = av_find_best_stream(impl_->fmt, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
     if (impl_->video_stream_index < 0) {
         throw std::runtime_error("no video stream found in: " + path);
     }
@@ -94,16 +93,8 @@ VideoDecoder::VideoDecoder(const std::string& path) {
 
     rgb_stride_ = impl_->rgb->linesize[0];
 
-    impl_->sws = sws_getContext(width_,
-                                height_,
-                                impl_->dec->pix_fmt,
-                                width_,
-                                height_,
-                                dst_fmt,
-                                SWS_BILINEAR,
-                                nullptr,
-                                nullptr,
-                                nullptr);
+    impl_->sws = sws_getContext(
+        width_, height_, impl_->dec->pix_fmt, width_, height_, dst_fmt, SWS_BILINEAR, nullptr, nullptr, nullptr);
     if (!impl_->sws)
         throw std::runtime_error("sws_getContext failed");
 }

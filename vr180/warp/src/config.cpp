@@ -152,8 +152,7 @@ void print_config(const Config& c) {
     std::cout << "\n[output_settings]\n";
     std::cout << "    width:                 " << c.output_settings.width << "\n";
     std::cout << "    height:                " << c.output_settings.height << "\n";
-    std::cout << "    fps:                   " << c.output_settings.fps_num << "/"
-              << c.output_settings.fps_den << "\n";
+    std::cout << "    fps:                   " << c.output_settings.fps_num << "/" << c.output_settings.fps_den << "\n";
 
     std::cout << "\n[encode_settings]\n";
     std::cout << "    hardware:              " << to_string(c.encode_settings.hardware) << "\n";
@@ -165,10 +164,8 @@ void print_config(const Config& c) {
     std::cout << "    gop:                   " << c.encode_settings.gop << "\n";
 
     std::cout << "\n[sound_settings]\n";
-    std::cout << "    left_source:           " << (c.sound_settings.left_source ? "true" : "false")
-              << "\n";
-    std::cout << "    right_source:          " << (c.sound_settings.right_source ? "true" : "false")
-              << "\n";
+    std::cout << "    left_source:           " << (c.sound_settings.left_source ? "true" : "false") << "\n";
+    std::cout << "    right_source:          " << (c.sound_settings.right_source ? "true" : "false") << "\n";
 
     std::cout << "\n[warp_settings]\n";
     std::cout << "    eye_width:             " << c.warp_settings.eye_width << "\n";
@@ -181,16 +178,11 @@ void print_config(const Config& c) {
     std::cout << "    height:                " << c.camera_parameters.height << "\n";
     std::cout << "    hfov_degrees:          " << c.camera_parameters.hfov_degrees << "\n";
     std::cout << "    lens_distortion:       " << c.camera_parameters.lens_distortion << "\n";
-    std::cout << "        k1:                "
-              << c.camera_parameters.lens_distortion_coefficients.k1 << "\n";
-    std::cout << "        k2:                "
-              << c.camera_parameters.lens_distortion_coefficients.k2 << "\n";
-    std::cout << "        k3:                "
-              << c.camera_parameters.lens_distortion_coefficients.k3 << "\n";
-    std::cout << "        p1:                "
-              << c.camera_parameters.lens_distortion_coefficients.p1 << "\n";
-    std::cout << "        p2:                "
-              << c.camera_parameters.lens_distortion_coefficients.p2 << "\n";
+    std::cout << "        k1:                " << c.camera_parameters.lens_distortion_coefficients.k1 << "\n";
+    std::cout << "        k2:                " << c.camera_parameters.lens_distortion_coefficients.k2 << "\n";
+    std::cout << "        k3:                " << c.camera_parameters.lens_distortion_coefficients.k3 << "\n";
+    std::cout << "        p1:                " << c.camera_parameters.lens_distortion_coefficients.p1 << "\n";
+    std::cout << "        p2:                " << c.camera_parameters.lens_distortion_coefficients.p2 << "\n";
 
     std::cout << "\n==============================================================================="
                  "==\n\n";

@@ -142,8 +142,7 @@ __global__ void project_bilinear_sbs(const uint8_t* __restrict__ src,
     int i11 = (y1 * src_w + x1) * 3;
 
     for (int c = 0; c < 3; ++c) {
-        float vv =
-            w00 * src[i00 + c] + w10 * src[i10 + c] + w01 * src[i01 + c] + w11 * src[i11 + c];
+        float vv = w00 * src[i00 + c] + w10 * src[i10 + c] + w01 * src[i01 + c] + w11 * src[i11 + c];
         dst[o + c] = clamp_u8((int)lrintf(vv));
     }
 }
@@ -166,10 +165,8 @@ rgb::Frame project_bilinear(const rgb::Frame& src, const UvMap& lut) {
     handle_cuda_error(cudaMalloc(&d_dst, dst_bytes), "cudaMalloc d_dst");
     handle_cuda_error(cudaMalloc(&d_lut, lut_bytes), "cudaMalloc d_lut");
 
-    handle_cuda_error(cudaMemcpy(d_src, src.data.data(), src_bytes, cudaMemcpyHostToDevice),
-                      "cudaMemcpy H2D src");
-    handle_cuda_error(cudaMemcpy(d_lut, lut.data.data(), lut_bytes, cudaMemcpyHostToDevice),
-                      "cudaMemcpy H2D lut");
+    handle_cuda_error(cudaMemcpy(d_src, src.data.data(), src_bytes, cudaMemcpyHostToDevice), "cudaMemcpy H2D src");
+    handle_cuda_error(cudaMemcpy(d_lut, lut.data.data(), lut_bytes, cudaMemcpyHostToDevice), "cudaMemcpy H2D lut");
 
     dim3 block(16, 16);
     dim3 grid((out_w + block.x - 1) / block.x, (out_h + block.y - 1) / block.y);
@@ -179,8 +176,7 @@ rgb::Frame project_bilinear(const rgb::Frame& src, const UvMap& lut) {
     handle_cuda_error(cudaGetLastError(), "kernel launch");
     handle_cuda_error(cudaDeviceSynchronize(), "cudaDeviceSynchronize");
 
-    handle_cuda_error(cudaMemcpy(dst.data.data(), d_dst, dst_bytes, cudaMemcpyDeviceToHost),
-                      "cudaMemcpy D2H dst");
+    handle_cuda_error(cudaMemcpy(dst.data.data(), d_dst, dst_bytes, cudaMemcpyDeviceToHost), "cudaMemcpy D2H dst");
 
     cudaFree(d_src);
     cudaFree(d_dst);
@@ -202,23 +198,14 @@ void project_bilinear(const rgb::Frame& src, const UvMap& lut, int lut_x_offset,
     handle_cuda_error(cudaMalloc(&d_src, src_bytes), "cudaMalloc d_src");
     handle_cuda_error(cudaMalloc(&d_lut, lut_bytes), "cudaMalloc d_lut");
 
-    handle_cuda_error(cudaMemcpy(d_src, src.data.data(), src_bytes, cudaMemcpyHostToDevice),
-                      "H2D src");
-    handle_cuda_error(cudaMemcpy(d_lut, lut.data.data(), lut_bytes, cudaMemcpyHostToDevice),
-                      "H2D lut");
+    handle_cuda_error(cudaMemcpy(d_src, src.data.data(), src_bytes, cudaMemcpyHostToDevice), "H2D src");
+    handle_cuda_error(cudaMemcpy(d_lut, lut.data.data(), lut_bytes, cudaMemcpyHostToDevice), "H2D lut");
 
     dim3 block(16, 16);
     dim3 grid((out_w + block.x - 1) / block.x, (out_h + block.y - 1) / block.y);
 
-    project_bilinear_sbs<<<grid, block>>>(d_src,
-                                          src.width,
-                                          src.height,
-                                          d_lut,
-                                          lut.width,
-                                          lut.height,
-                                          2 * lut.width,
-                                          lut_x_offset,
-                                          target);
+    project_bilinear_sbs<<<grid, block>>>(
+        d_src, src.width, src.height, d_lut, lut.width, lut.height, 2 * lut.width, lut_x_offset, target);
 
     handle_cuda_error(cudaGetLastError(), "warp kernel");
     handle_cuda_error(cudaDeviceSynchronize(), "warp sync");
@@ -275,13 +262,8 @@ __global__ void rgb_to_nv12_into_hw_kernel(const uint8_t* __restrict__ rgb, // t
     }
 }
 
-extern "C" void rgb_to_nv12_into_hw(const uint8_t* rgb,
-                                    int w,
-                                    int h,
-                                    uint8_t* y_plane,
-                                    int y_pitch,
-                                    uint8_t* uv_plane,
-                                    int uv_pitch) {
+extern "C" void
+rgb_to_nv12_into_hw(const uint8_t* rgb, int w, int h, uint8_t* y_plane, int y_pitch, uint8_t* uv_plane, int uv_pitch) {
     dim3 block(32, 8);
     dim3 grid((w + block.x - 1) / block.x, (h + block.y - 1) / block.y);
     rgb_to_nv12_into_hw_kernel<<<grid, block>>>(rgb, w, h, y_plane, y_pitch, uv_plane, uv_pitch);

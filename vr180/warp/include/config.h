@@ -32,10 +32,9 @@ struct Config {
     SoundSettings sound_settings;
 
     // Loaded directly into runtime structs:
-    onevr::vr180::Camera camera_parameters; // from cam/<...>/config.yaml
-    onevr::vr180::WarpSettings
-        warp_settings;                     // derived from camera + output, with optional overrides
-    onevr::EncodeSettings encode_settings; // from encode_settings + output_settings
+    onevr::vr180::Camera camera_parameters;   // from cam/<...>/config.yaml
+    onevr::vr180::WarpSettings warp_settings; // derived from camera + output, with optional overrides
+    onevr::EncodeSettings encode_settings;    // from encode_settings + output_settings
 };
 
 // Loads app config YAML, then loads camera config YAML referenced inside it,

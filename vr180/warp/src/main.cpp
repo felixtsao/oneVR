@@ -32,8 +32,7 @@ int main(int argc, char** argv) {
 
     onevr::vr180::print_config(config);
 
-    onevr::VideoEncoder encoder(std::filesystem::path(config.files.output_directory) /
-                                    config.files.output_composite,
+    onevr::VideoEncoder encoder(std::filesystem::path(config.files.output_directory) / config.files.output_composite,
                                 config.encode_settings);
 
     onevr::UvMap lut = onevr::vr180::slut(config.camera_parameters, config.warp_settings);
@@ -42,9 +41,8 @@ int main(int argc, char** argv) {
     onevr::rgb::Frame input_left, input_right;
     uint8_t* sbs_composite = nullptr;
     if (config.encode_settings.hardware == onevr::EncodeHardware::GPU) {
-        const size_t sbs_composite_bytes = (size_t)config.encode_settings.output_width *
-                                           config.encode_settings.output_height *
-                                           3; // 3 channel RGB
+        const size_t sbs_composite_bytes =
+            (size_t)config.encode_settings.output_width * config.encode_settings.output_height * 3; // 3 channel RGB
         cudaMalloc(&sbs_composite, sbs_composite_bytes);
     }
 
@@ -55,10 +53,10 @@ int main(int argc, char** argv) {
         }
         switch (config.encode_settings.hardware) {
             case onevr::EncodeHardware::CPU: {
-                onevr::rgb::Frame warped_left = onevr::vr180::cuda::warp(
-                    input_left, lut, onevr::vr180::InterpolationMethod::BILINEAR);
-                onevr::rgb::Frame warped_right = onevr::vr180::cuda::warp(
-                    input_right, lut, onevr::vr180::InterpolationMethod::BILINEAR);
+                onevr::rgb::Frame warped_left =
+                    onevr::vr180::cuda::warp(input_left, lut, onevr::vr180::InterpolationMethod::BILINEAR);
+                onevr::rgb::Frame warped_right =
+                    onevr::vr180::cuda::warp(input_right, lut, onevr::vr180::InterpolationMethod::BILINEAR);
                 onevr::rgb::Frame sbs = onevr::cat_sbs(warped_left, warped_right);
                 encoder.write(sbs, /*pts=*/i++);
                 break;
