@@ -2,9 +2,11 @@ cc_library(
     name = "warp_lib",
     srcs = [
         "src/warp.cpp",
+        "src/config.cpp",
     ],
     hdrs = [
         "include/warp.h",
+        "include/config.h",
     ],
     includes = ["include"],
     deps = [

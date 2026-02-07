@@ -17,7 +17,7 @@ static inline float deg2rad(float d) {
     return d * static_cast<float>(PI) / 180.0f;
 }
 
-onevr::UvMap slut(const Camera& cam, const Vr180WarpSettings& s) {
+onevr::UvMap slut(const Camera& cam, const WarpSettings& s) {
 
     if (cam.width <= 0 || cam.height <= 0)
         throw std::runtime_error("create_warp_slut: invalid camera dimensions");

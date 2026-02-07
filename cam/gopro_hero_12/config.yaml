@@ -1,0 +1,12 @@
+{
+    name: gopro_hero_12,
+    horizontal_fov_degrees: 120.0,
+    lens_distortion: true,
+    lens_distortion_coefficients: {
+        k1: 0.291,
+        k2: 0.0,
+        k3: 0.0,
+        p1: 0.0,
+        p2: 0.0
+    }
+}

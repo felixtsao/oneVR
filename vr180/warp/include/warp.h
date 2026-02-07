@@ -11,6 +11,8 @@ static const float PI = 3.14159265358979323846;
 enum class InterpolationMethod { NEAREST_NEIGHBOR, BILINEAR };
 
 struct Camera {
+    std::string name;
+
     // Sensor dimensions (pixels)
     int width = 0;
     int height = 0;
@@ -21,9 +23,19 @@ struct Camera {
     // Principal point (defaults to center if <0).
     float cx = -1.0f;
     float cy = -1.0f;
+
+    // Lens distortion correction
+    bool lens_distortion = false;
+    struct DistortionCoefficients {
+        float k1 = 0.0f;
+        float k2 = 0.0f;
+        float k3 = 0.0f;
+        float p1 = 0.0f;
+        float p2 = 0.0f;
+    } lens_distortion_coefficients;
 };
 
-struct Vr180WarpSettings {
+struct WarpSettings {
     // Per-eye output size. Default: 4096x4096 (SBS 8192x4096)
     int eye_width = 4096;
     int eye_height = 4096;
@@ -37,7 +49,7 @@ struct Vr180WarpSettings {
 
 // Synthesize look-up table which encodes warp/camera projection characteristics used throughout
 // runtime
-onevr::UvMap slut(const Camera& cam, const Vr180WarpSettings& s);
+onevr::UvMap slut(const Camera& cam, const WarpSettings& s);
 
 // Map from camera sensor space to VR180 equirectangular and project back to screen space
 onevr::rgb::Frame

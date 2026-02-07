@@ -1,3 +1,4 @@
+#include "config.h"
 #include "onevr/frame.h"
 #include "onevr/image_processing.h"
 #include "onevr/video_decoder.h"
@@ -13,77 +14,72 @@
 
 int main(int argc, char** argv) {
 
-    if (argc < 4) {
-        std::cerr << "usage: warp <left.mp4> <right.mp4> <out_dir>\n";
+    if (argc < 2) {
+        std::cerr << "usage: warp_encoder /vr180/warp_encoder/config.yaml\n";
         return 1;
     }
 
-    const std::string left_path = argv[1];
-    const std::string right_path = argv[2];
-    const std::string out_dir = argv[3];
+    const std::string config_path = "/workspace/dev/oneVR/vr180/warp/config.yaml";
+    onevr::vr180::Config config = onevr::vr180::LoadConfigYaml(config_path);
 
-    std::filesystem::create_directories(out_dir);
+    onevr::VideoDecoder decoder_left(config.files.input_left);
+    onevr::VideoDecoder decoder_right(config.files.input_right);
 
-    onevr::VideoDecoder left(left_path);
-    onevr::VideoDecoder right(right_path);
+    // Update camera sensor size from decoded video as multiple resolutions can be supported by most
+    // cameras
+    config.camera_parameters.width = decoder_left.width();
+    config.camera_parameters.height = decoder_left.height();
 
-    onevr::EncodeSettings es;
-    es.input_width = 8192;
-    es.input_height = 4096;
-    es.output_width = 8192;
-    es.output_height = 4096;
-    es.fps_num = 30000;
-    es.fps_den = 1001;
-    es.bitrate = 20'000'000;
-    es.hardware = onevr::EncodeHardware::GPU;
-    es.codec = onevr::VideoCodec::HEVC;
-    es.preset = (es.hardware == onevr::EncodeHardware::GPU) ? "p4" : "medium";
-    onevr::VideoEncoder enc(out_dir + "out.mp4", es);
+    onevr::vr180::print_config(config);
 
-    onevr::vr180::Camera cam;
-    cam.width = left.width();
-    cam.height = left.height();
-    cam.hfov_degrees = 120.0f;
-    onevr::vr180::Vr180WarpSettings ws;
-    ws.eye_width = 4096;
-    ws.eye_height = 4096;
-    ws.interpolation_method = onevr::vr180::InterpolationMethod::BILINEAR;
-    onevr::UvMap lut = onevr::vr180::slut(cam, ws);
+    onevr::VideoEncoder encoder(std::filesystem::path(config.files.output_directory) /
+                                    config.files.output_composite,
+                                config.encode_settings);
+
+    onevr::UvMap lut = onevr::vr180::slut(config.camera_parameters, config.warp_settings);
+
+    // Allocate buffers
+    onevr::rgb::Frame input_left, input_right;
+    uint8_t* sbs_composite = nullptr;
+    if (config.encode_settings.hardware == onevr::EncodeHardware::GPU) {
+        const size_t sbs_composite_bytes = (size_t)config.encode_settings.output_width *
+                                           config.encode_settings.output_height *
+                                           3; // 3 channel RGB
+        cudaMalloc(&sbs_composite, sbs_composite_bytes);
+    }
 
     int i = 0;
     while (1) {
-        onevr::rgb::Frame L, R;
-        if (!left.read(L) || !right.read(R))
+        if (!decoder_left.read(input_left) || !decoder_right.read(input_right)) {
             break;
-        switch (es.hardware) {
+        }
+        switch (config.encode_settings.hardware) {
             case onevr::EncodeHardware::CPU: {
-                onevr::rgb::Frame warpedL =
-                    onevr::vr180::cuda::warp(L, lut, onevr::vr180::InterpolationMethod::BILINEAR);
-                onevr::rgb::Frame warpedR =
-                    onevr::vr180::cuda::warp(R, lut, onevr::vr180::InterpolationMethod::BILINEAR);
-                onevr::rgb::Frame sbs = onevr::cat_sbs(warpedL, warpedR);
-                enc.write(sbs, /*pts=*/i++);
+                onevr::rgb::Frame warped_left = onevr::vr180::cuda::warp(
+                    input_left, lut, onevr::vr180::InterpolationMethod::BILINEAR);
+                onevr::rgb::Frame warped_right = onevr::vr180::cuda::warp(
+                    input_right, lut, onevr::vr180::InterpolationMethod::BILINEAR);
+                onevr::rgb::Frame sbs = onevr::cat_sbs(warped_left, warped_right);
+                encoder.write(sbs, /*pts=*/i++);
                 break;
             }
             case onevr::EncodeHardware::GPU: {
-                uint8_t* sbs_composite = nullptr;
-                size_t sbs_composite_bytes =
-                    (size_t)es.output_width * es.output_height * 3; // 3 channel RGB
-                cudaMalloc(&sbs_composite, sbs_composite_bytes);
                 onevr::vr180::cuda::warp(
-                    L, lut, 0, onevr::vr180::InterpolationMethod::BILINEAR, sbs_composite);
-                onevr::vr180::cuda::warp(R,
+                    input_left, lut, 0, onevr::vr180::InterpolationMethod::BILINEAR, sbs_composite);
+                onevr::vr180::cuda::warp(input_right,
                                          lut,
-                                         ws.eye_width,
+                                         config.warp_settings.eye_width,
                                          onevr::vr180::InterpolationMethod::BILINEAR,
                                          sbs_composite);
-                enc.write_gpu(sbs_composite, /*pts=*/i++);
+                encoder.write_gpu(sbs_composite, /*pts=*/i++);
                 break;
             }
         }
     }
 
-    enc.finish();
+    encoder.finish();
+    if (sbs_composite)
+        cudaFree(sbs_composite);
 
     return 0;
 }
