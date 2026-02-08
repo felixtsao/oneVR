@@ -33,6 +33,7 @@ if command -v apt-get >/dev/null 2>&1; then
     build-essential \
     clang-format \
     clang-tidy \
+    ffmpeg \
     pkg-config \
     git \
     curl \
