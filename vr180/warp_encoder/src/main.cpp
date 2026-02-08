@@ -46,6 +46,19 @@ int main(int argc, char** argv) {
         cudaMalloc(&sbs_composite, sbs_composite_bytes);
     }
 
+    // Timecode sync left and right input videos
+    // Seek through and discard earlier frames from the channel which started recording earlier
+    int64_t frame_sync_offset = decoder_left.frame_index() - decoder_right.frame_index();
+    std::cout << "left_timecode: " << decoder_left.timecode() << std::endl;
+    std::cout << "right_timecode: " << decoder_right.timecode() << std::endl;
+    if (frame_sync_offset > 0) {
+        std::cout << "frame_sync discarded " << frame_sync_offset << " frames from right camera" << std::endl;
+        decoder_right.discard_frames(frame_sync_offset);
+    } else if (frame_sync_offset < 0) {
+        std::cout << "frame_sync discarded " << -frame_sync_offset << " frames from left camera" << std::endl;
+        decoder_left.discard_frames(-frame_sync_offset);
+    }
+
     int i = 0;
     while (1) {
         if (!decoder_left.read(input_left) || !decoder_right.read(input_right)) {

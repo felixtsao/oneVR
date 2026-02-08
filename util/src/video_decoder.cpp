@@ -4,6 +4,7 @@
 
 #include <cstring>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 extern "C" {
@@ -17,6 +18,60 @@ namespace onevr {
 
 static void throw_ff(const char* what, int err) {
     throw std::runtime_error(std::string(what) + ": " + ff_err(err));
+}
+
+static AVRational get_stream_avg_fps(const AVFormatContext* fmt, int video_stream_index) {
+    const AVStream* st = fmt->streams[video_stream_index];
+    return st->avg_frame_rate.num > 0 ? st->avg_frame_rate : st->r_frame_rate;
+}
+
+static int64_t timecode_to_frame_index(const Timecode& tc, int fps_num, int fps_den) {
+    // Initialize calculation FPS (NTSC 29.97 as 30 or 59.94 as 60)
+    const int fps = (fps_num == 30000 && fps_den == 1001)   ? 30
+                    : (fps_num == 60000 && fps_den == 1001) ? 60
+                                                            : fps_num / fps_den;
+
+    int64_t frame_idx = ((int64_t)tc.hh * 3600 + (int64_t)tc.mm * 60 + (int64_t)tc.ss) * fps + tc.ff;
+
+    if (!tc.drop_frame) {
+        return frame_idx;
+    }
+
+    // Drop-frame correction
+    const int drop_frames = (fps == 60) ? 4 : 2;
+    const int64_t total_minutes = (int64_t)tc.hh * 60 + tc.mm;
+    const int64_t dropped = drop_frames * (total_minutes - total_minutes / 10);
+
+    return frame_idx - dropped;
+}
+
+static Timecode parse_timecode(const std::string& s) {
+    Timecode tc;
+
+    // Detect drop-frame by separator
+    tc.drop_frame = (s.find(';') != std::string::npos);
+
+    char sep;
+    if (sscanf(s.c_str(), "%d:%d:%d%c%d", &tc.hh, &tc.mm, &tc.ss, &sep, &tc.ff) != 5) {
+        throw std::runtime_error("Invalid timecode format: " + s);
+    }
+
+    return tc;
+}
+
+static std::string read_timecode_from_stream(AVFormatContext* fmt, int video_stream_index) {
+    if (!fmt || video_stream_index < 0 || video_stream_index >= static_cast<int>(fmt->nb_streams)) {
+        return {};
+    }
+
+    AVStream* st = fmt->streams[video_stream_index];
+
+    // 1) Check video stream metadata (most common)
+    if (AVDictionaryEntry* e = av_dict_get(st->metadata, "timecode", nullptr, 0)) {
+        return std::string(e->value);
+    }
+
+    return {};
 }
 
 struct VideoDecoder::Impl {
@@ -50,6 +105,14 @@ VideoDecoder::VideoDecoder(const std::string& path) {
     impl_->video_stream_index = av_find_best_stream(impl_->fmt, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
     if (impl_->video_stream_index < 0) {
         throw std::runtime_error("no video stream found in: " + path);
+    }
+
+    const std::string time_code = read_timecode_from_stream(impl_->fmt, impl_->video_stream_index);
+    if (!time_code.empty()) {
+        timecode_ = time_code;
+        const Timecode t = parse_timecode(time_code);
+        const AVRational fps = get_stream_avg_fps(impl_->fmt, impl_->video_stream_index);
+        frame_idx_ = timecode_to_frame_index(t, fps.num, fps.den);
     }
 
     AVStream* st = impl_->fmt->streams[impl_->video_stream_index];
@@ -206,6 +269,16 @@ bool VideoDecoder::read(rgb::Frame& out) {
         impl_->eof = true;
         return false;
     }
+}
+
+bool VideoDecoder::discard_frames(int64_t count) {
+    rgb::Frame dummy;
+    for (int64_t i = 0; i < count; ++i) {
+        if (!read(dummy)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 } // namespace onevr
