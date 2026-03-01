@@ -46,6 +46,9 @@ int main(int argc, char** argv) {
         cudaMalloc(&sbs_composite, sbs_composite_bytes);
     }
 
+    decoder_left.seek_seconds(config.output_settings.start_time_seconds);
+    decoder_right.seek_seconds(config.output_settings.start_time_seconds);
+
     // Timecode sync left and right input videos
     // Seek through and discard earlier frames from the channel which started recording earlier
     int64_t frame_sync_offset = decoder_left.frame_index() - decoder_right.frame_index();
@@ -58,6 +61,8 @@ int main(int argc, char** argv) {
         std::cout << "frame_sync discarded " << -frame_sync_offset << " frames from left camera" << std::endl;
         decoder_left.discard_frames(-frame_sync_offset);
     }
+
+    int duration_frame_count = (config.output_settings.fps_num / config.output_settings.fps_den) * config.output_settings.duration_seconds;
 
     int i = 0;
     while (1) {
@@ -85,6 +90,9 @@ int main(int argc, char** argv) {
                 encoder.write_gpu(sbs_composite, /*pts=*/i++);
                 break;
             }
+        }
+        if (i > duration_frame_count) {
+            break;
         }
     }
 

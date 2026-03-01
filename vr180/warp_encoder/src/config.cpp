@@ -153,6 +153,8 @@ void print_config(const Config& c) {
     std::cout << "    width:                 " << c.output_settings.width << "\n";
     std::cout << "    height:                " << c.output_settings.height << "\n";
     std::cout << "    fps:                   " << c.output_settings.fps_num << "/" << c.output_settings.fps_den << "\n";
+    std::cout << "    start_time_seconds:    " << c.output_settings.start_time_seconds << "\n";
+    std::cout << "    duration_seconds:      " << c.output_settings.duration_seconds << "\n";
 
     std::cout << "\n[encode_settings]\n";
     std::cout << "    hardware:              " << to_string(c.encode_settings.hardware) << "\n";
@@ -224,6 +226,8 @@ Config LoadConfigYaml(const std::string& config_path) {
         auto o = req_node(root, "output_settings");
         cfg.output_settings.width = opt_i(o, "width", 8192);
         cfg.output_settings.height = opt_i(o, "height", 4096);
+        cfg.output_settings.start_time_seconds = opt_i(o, "start_time_seconds", 0);
+        cfg.output_settings.duration_seconds = opt_i(o, "duration_seconds", 1);
         parse_fps_node(o["fps"], cfg.output_settings.fps_num, cfg.output_settings.fps_den);
 
         if (cfg.output_settings.width <= 0 || cfg.output_settings.height <= 0)

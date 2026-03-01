@@ -19,6 +19,8 @@ struct OutputSettings {
     int height = 0;
     int fps_num = 30000;
     int fps_den = 1001;
+    int start_time_seconds = 0;
+    int duration_seconds = 1;
 };
 
 struct SoundSettings {

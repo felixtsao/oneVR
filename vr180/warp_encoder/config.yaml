@@ -1,15 +1,17 @@
 {
     files: {
-        camera_config: /workspace/oneVR/cam/gopro_hero_12/config.yaml,
-        input_left: /workspace/data/left.mp4,
-        input_right: /workspace/data/right.mp4,
-        output_directory: /workspace/data/,
+        camera_config: /home/user/dev/oneVR/cam/gopro_hero_12/config.yaml,
+        input_left: /home/user/dev/data/left.mp4,
+        input_right: /home/user/dev/data/right.mp4,
+        output_directory: /home/user/dev/data,
         output_composite: composite_3D_SBS_LR.mp4
     },
     output_settings: {
         width: 8192,
         height: 4096,
-        unused_fps: 30     # default 29.97 fps if not specified
+        start_time_seconds: 1212,
+        duration_seconds: 145
+        # fps: 30          # default 29.97 fps if not specified
     },
     encode_settings: {
         hardware: gpu,     # gpu / cpu

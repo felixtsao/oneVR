@@ -281,4 +281,41 @@ bool VideoDecoder::discard_frames(int64_t count) {
     return true;
 }
 
+bool VideoDecoder::seek_seconds(double seconds) {
+    if (!impl_ || !impl_->fmt || !impl_->dec) return false;
+    if (seconds < 0) seconds = 0;
+
+    AVStream* st = impl_->fmt->streams[impl_->video_stream_index];
+    const AVRational tb = st->time_base;
+
+    // Convert seconds -> stream timestamp units
+    int64_t ts = (int64_t)llround(seconds / av_q2d(tb));
+
+    // Seek (prefer avformat_seek_file; it’s more robust)
+    int ret = avformat_seek_file(
+        impl_->fmt,
+        impl_->video_stream_index,
+        INT64_MIN,
+        ts,
+        INT64_MAX,
+        AVSEEK_FLAG_BACKWARD
+    );
+    if (ret < 0) return false;
+
+    // Flush decoder state
+    avcodec_flush_buffers(impl_->dec);
+
+    // Clear old packet/frame
+    av_packet_unref(impl_->pkt);
+    av_frame_unref(impl_->frame);
+
+    impl_->eof = false;
+
+    // Optional: reset your frame index estimate (approx)
+    // If you track frame_idx_ strictly as “frames read”, set it to 0 here.
+    // If you want it to represent absolute timeline, you can approximate:
+    // frame_idx_ = seconds * fps_num / fps_den;
+    return true;
+}
+
 } // namespace onevr

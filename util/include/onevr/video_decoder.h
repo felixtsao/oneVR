@@ -25,6 +25,7 @@ class VideoDecoder {
     // Reads next frame. Returns false on EOF.
     bool read(rgb::Frame& out);
     bool discard_frames(int64_t count);
+    bool seek_seconds(double seconds);
 
     int width() const { return width_; }
     int height() const { return height_; }
