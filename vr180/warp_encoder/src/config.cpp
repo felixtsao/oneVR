@@ -105,6 +105,13 @@ static void fill_camera_from_yaml(onevr::vr180::Camera& cam, const YAML::Node& n
         cam.name = n["name"].as<std::string>();
     if (n["horizontal_fov_degrees"])
         cam.hfov_degrees = (float)n["horizontal_fov_degrees"].as<double>();
+    if (n["intrinsics"]) {
+        auto i = n["intrinsics"];
+        cam.fx = (float)opt_d(i, "fx", 0.0);
+        cam.fy = (float)opt_d(i, "fy", 0.0);
+        cam.cx = (float)opt_d(i, "cx", -1.0);
+        cam.cy = (float)opt_d(i, "cy", -1.0);
+    }
     if (n["lens_distortion"]) {
         cam.lens_distortion = n["lens_distortion"].as<bool>();
     }
@@ -179,6 +186,11 @@ void print_config(const Config& c) {
     std::cout << "    width:                 " << c.camera_parameters.width << "\n";
     std::cout << "    height:                " << c.camera_parameters.height << "\n";
     std::cout << "    hfov_degrees:          " << c.camera_parameters.hfov_degrees << "\n";
+    std::cout << "    intrinsics:\n";
+    std::cout << "        fx:                " << c.camera_parameters.fx << "\n";
+    std::cout << "        fy:                " << c.camera_parameters.fy << "\n";
+    std::cout << "        cx:                " << c.camera_parameters.cx << "\n";
+    std::cout << "        cy:                " << c.camera_parameters.cy << "\n";
     std::cout << "    lens_distortion:       " << c.camera_parameters.lens_distortion << "\n";
     std::cout << "        k1:                " << c.camera_parameters.lens_distortion_coefficients.k1 << "\n";
     std::cout << "        k2:                " << c.camera_parameters.lens_distortion_coefficients.k2 << "\n";
@@ -187,7 +199,7 @@ void print_config(const Config& c) {
     std::cout << "        p2:                " << c.camera_parameters.lens_distortion_coefficients.p2 << "\n";
 
     std::cout << "\n==============================================================================="
-                 "==\n\n";
+                 "====\n\n";
 }
 
 Config LoadConfigYaml(const std::string& config_path) {

@@ -17,6 +17,21 @@ static inline float deg2rad(float d) {
     return d * static_cast<float>(PI) / 180.0f;
 }
 
+static inline void
+distort_brown_conrady(float x, float y, const onevr::vr180::Camera::DistortionCoefficients& d, float* xd, float* yd) {
+    float r2 = x * x + y * y;
+    float r4 = r2 * r2;
+    float r6 = r4 * r2;
+
+    float radial = 1.0f + d.k1 * r2 + d.k2 * r4 + d.k3 * r6;
+
+    float x_tan = 2.0f * d.p1 * x * y + d.p2 * (r2 + 2.0f * x * x);
+    float y_tan = d.p1 * (r2 + 2.0f * y * y) + 2.0f * d.p2 * x * y;
+
+    *xd = x * radial + x_tan;
+    *yd = y * radial + y_tan;
+}
+
 onevr::UvMap slut(const Camera& cam, const WarpSettings& s) {
 
     if (cam.width <= 0 || cam.height <= 0)

@@ -62,7 +62,8 @@ int main(int argc, char** argv) {
         decoder_left.discard_frames(-frame_sync_offset);
     }
 
-    int duration_frame_count = (config.output_settings.fps_num / config.output_settings.fps_den) * config.output_settings.duration_seconds;
+    int duration_frame_count =
+        (config.output_settings.fps_num / config.output_settings.fps_den) * config.output_settings.duration_seconds;
 
     int i = 0;
     while (1) {

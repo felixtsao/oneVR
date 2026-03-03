@@ -24,6 +24,9 @@ struct Camera {
     float cx = -1.0f;
     float cy = -1.0f;
 
+    float fx = 1.0f;
+    float fy = 1.0f;
+
     // Lens distortion correction
     bool lens_distortion = false;
     struct DistortionCoefficients {

@@ -282,8 +282,10 @@ bool VideoDecoder::discard_frames(int64_t count) {
 }
 
 bool VideoDecoder::seek_seconds(double seconds) {
-    if (!impl_ || !impl_->fmt || !impl_->dec) return false;
-    if (seconds < 0) seconds = 0;
+    if (!impl_ || !impl_->fmt || !impl_->dec)
+        return false;
+    if (seconds < 0)
+        seconds = 0;
 
     AVStream* st = impl_->fmt->streams[impl_->video_stream_index];
     const AVRational tb = st->time_base;
@@ -292,15 +294,9 @@ bool VideoDecoder::seek_seconds(double seconds) {
     int64_t ts = (int64_t)llround(seconds / av_q2d(tb));
 
     // Seek (prefer avformat_seek_file; it’s more robust)
-    int ret = avformat_seek_file(
-        impl_->fmt,
-        impl_->video_stream_index,
-        INT64_MIN,
-        ts,
-        INT64_MAX,
-        AVSEEK_FLAG_BACKWARD
-    );
-    if (ret < 0) return false;
+    int ret = avformat_seek_file(impl_->fmt, impl_->video_stream_index, INT64_MIN, ts, INT64_MAX, AVSEEK_FLAG_BACKWARD);
+    if (ret < 0)
+        return false;
 
     // Flush decoder state
     avcodec_flush_buffers(impl_->dec);

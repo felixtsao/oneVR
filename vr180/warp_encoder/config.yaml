@@ -1,6 +1,6 @@
 {
     files: {
-        camera_config: /home/user/dev/oneVR/cam/gopro_hero_12/config.yaml,
+        camera_config: /home/user/dev/oneVR/cam/gopro_hero_12/calibration.yaml,
         input_left: /home/user/dev/data/left.mp4,
         input_right: /home/user/dev/data/right.mp4,
         output_directory: /home/user/dev/data,
@@ -10,7 +10,7 @@
         width: 8192,
         height: 4096,
         start_time_seconds: 1212,
-        duration_seconds: 145
+        duration_seconds: 2
         # fps: 30          # default 29.97 fps if not specified
     },
     encode_settings: {
