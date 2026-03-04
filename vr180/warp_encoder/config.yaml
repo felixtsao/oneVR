@@ -1,0 +1,31 @@
+{
+    files: {
+        camera_config: /home/user/dev/oneVR/cam/gopro_hero_12/calibration.yaml,
+        input_left: /home/user/dev/data/left.mp4,
+        input_right: /home/user/dev/data/right.mp4,
+        output_directory: /home/user/dev/data,
+        output_composite: composite_3D_SBS_LR.mp4
+    },
+    output_settings: {
+        width: 8192,
+        height: 4096,
+        start_time_seconds: 1212,
+        duration_seconds: 2,
+        contrast: 1.2,
+        brightness: 32,
+        # fps: 30          # default 29.97 fps if not specified
+    },
+    encode_settings: {
+        hardware: gpu,     # gpu / cpu
+        codec: hevc,       # hvec / h264
+        preset: p4,        # p1...p7 (lowest...highest quality)
+        cq: 23,            # <23 for higher quality
+        crf: 18,           # <23 for higher quality
+        bitrate: 40000000, # mbps
+        gop: 60            # generally use 2xfps
+    },
+    sound_settings: {
+        left_source: true,
+        right_source: false
+    }
+}

@@ -1,0 +1,16 @@
+cc_library(
+    name = "util",
+    srcs = glob(["src/*.cpp"]),
+    hdrs = glob(["include/onevr/*.h"]),
+    includes = ["include"],
+    copts = ["-std=c++20"],
+    defines = ["__STDC_CONSTANT_MACROS", "__STDC_FORMAT_MACROS", "__STDC_LIMIT_MACROS"],
+    linkopts = [
+        "-lavformat",
+        "-lavcodec",
+        "-lavutil",
+        "-lswscale",
+        "-lswresample",
+    ],
+    visibility = ["//visibility:public"],
+)

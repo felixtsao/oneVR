@@ -1,0 +1,41 @@
+BasedOnStyle: LLVM
+
+# Indentation
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+# Line length
+ColumnLimit: 120
+
+# Braces & blocks
+BreakBeforeBraces: Attach
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: InlineOnly
+
+# Pointer/reference alignment
+PointerAlignment: Left
+DerivePointerAlignment: false
+
+# Function formatting
+BinPackParameters: false
+BinPackArguments: false
+
+# Includes
+SortIncludes: true
+IncludeBlocks: Regroup
+
+# Spaces
+SpaceBeforeParens: ControlStatements
+SpacesInAngles: false
+SpacesInContainerLiterals: false
+
+# Comments
+ReflowComments: true
+
+# Switch/case
+IndentCaseLabels: true
+
+# CUDA friendliness
+Language: Cpp
