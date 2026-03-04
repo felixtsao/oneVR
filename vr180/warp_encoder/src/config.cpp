@@ -41,6 +41,11 @@ static int64_t opt_i64(const YAML::Node& n, const char* key, int64_t def) {
     return v ? v.as<int64_t>() : def;
 }
 
+static float opt_f(const YAML::Node& n, const char* key, float def) {
+    auto v = n[key];
+    return v ? v.as<float>() : def;
+}
+
 static double opt_d(const YAML::Node& n, const char* key, double def) {
     auto v = n[key];
     return v ? v.as<double>() : def;
@@ -162,6 +167,8 @@ void print_config(const Config& c) {
     std::cout << "    fps:                   " << c.output_settings.fps_num << "/" << c.output_settings.fps_den << "\n";
     std::cout << "    start_time_seconds:    " << c.output_settings.start_time_seconds << "\n";
     std::cout << "    duration_seconds:      " << c.output_settings.duration_seconds << "\n";
+    std::cout << "    contrast:              " << c.output_settings.contrast << "\n";
+    std::cout << "    brightness:            " << c.output_settings.brightness << "\n";
 
     std::cout << "\n[encode_settings]\n";
     std::cout << "    hardware:              " << to_string(c.encode_settings.hardware) << "\n";
@@ -240,6 +247,8 @@ Config LoadConfigYaml(const std::string& config_path) {
         cfg.output_settings.height = opt_i(o, "height", 4096);
         cfg.output_settings.start_time_seconds = opt_i(o, "start_time_seconds", 0);
         cfg.output_settings.duration_seconds = opt_i(o, "duration_seconds", 1);
+        cfg.output_settings.contrast = opt_f(o, "contrast", 1.0f);
+        cfg.output_settings.brightness = opt_i(o, "brightness", 0);
         parse_fps_node(o["fps"], cfg.output_settings.fps_num, cfg.output_settings.fps_den);
 
         if (cfg.output_settings.width <= 0 || cfg.output_settings.height <= 0)

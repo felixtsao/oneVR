@@ -126,8 +126,10 @@ void warp(const onevr::rgb::Frame& in,
           const onevr::UvMap& lut,
           int lut_x_offset,
           InterpolationMethod interp,
+          float contrast,
+          float brightness,
           uint8_t* target) {
-    onevr::cuda::project_bilinear(in, lut, lut_x_offset, target);
+    onevr::cuda::project_bilinear(in, lut, lut_x_offset, contrast, brightness, target);
 }
 
 } // namespace onevr::vr180::cuda

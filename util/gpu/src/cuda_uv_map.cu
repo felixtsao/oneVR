@@ -24,6 +24,11 @@ static __device__ __forceinline__ int idx3(int x, int y, int w) {
     return (y * w + x) * 3;
 }
 
+static __device__ __forceinline__ uint8_t brightness_contrast(uint8_t v, float contrast, float brightness) {
+    float f = contrast * (float(v) - 128.0f) + 128.0f + brightness;
+    return clamp_u8((int)f);
+}
+
 __global__ void project_bilinear(const uint8_t* __restrict__ src,
                                  int src_w,
                                  int src_h,
@@ -92,6 +97,8 @@ __global__ void project_bilinear_sbs(const uint8_t* __restrict__ src,
                                      int eye_h,
                                      int sbs_w,
                                      int dst_x_offset,
+                                     float contrast,
+                                     float brightness,
                                      uint8_t* __restrict__ dst) // sbs_w * eye_h * 3
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x; // 0..eye_w-1
@@ -143,7 +150,7 @@ __global__ void project_bilinear_sbs(const uint8_t* __restrict__ src,
 
     for (int c = 0; c < 3; ++c) {
         float vv = w00 * src[i00 + c] + w10 * src[i10 + c] + w01 * src[i01 + c] + w11 * src[i11 + c];
-        dst[o + c] = clamp_u8((int)lrintf(vv));
+        dst[o + c] = brightness_contrast(clamp_u8((int)lrintf(vv)), contrast, brightness);
     }
 }
 
@@ -185,7 +192,8 @@ rgb::Frame project_bilinear(const rgb::Frame& src, const UvMap& lut) {
     return dst;
 }
 
-void project_bilinear(const rgb::Frame& src, const UvMap& lut, int lut_x_offset, uint8_t* target) {
+void project_bilinear(
+    const rgb::Frame& src, const UvMap& lut, int lut_x_offset, float contrast, float brightness, uint8_t* target) {
     const int out_w = lut.width;
     const int out_h = lut.height;
 
@@ -204,8 +212,17 @@ void project_bilinear(const rgb::Frame& src, const UvMap& lut, int lut_x_offset,
     dim3 block(16, 16);
     dim3 grid((out_w + block.x - 1) / block.x, (out_h + block.y - 1) / block.y);
 
-    project_bilinear_sbs<<<grid, block>>>(
-        d_src, src.width, src.height, d_lut, lut.width, lut.height, 2 * lut.width, lut_x_offset, target);
+    project_bilinear_sbs<<<grid, block>>>(d_src,
+                                          src.width,
+                                          src.height,
+                                          d_lut,
+                                          lut.width,
+                                          lut.height,
+                                          2 * lut.width,
+                                          lut_x_offset,
+                                          contrast,
+                                          brightness,
+                                          target);
 
     handle_cuda_error(cudaGetLastError(), "warp kernel");
     handle_cuda_error(cudaDeviceSynchronize(), "warp sync");

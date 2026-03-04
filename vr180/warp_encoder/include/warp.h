@@ -62,7 +62,12 @@ onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, Int
 namespace onevr::vr180::cuda {
 
 onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod type);
-void warp(
-    const onevr::rgb::Frame& in, const onevr::UvMap& lut, int lut_x_offset, InterpolationMethod type, uint8_t* target);
+void warp(const onevr::rgb::Frame& in,
+          const onevr::UvMap& lut,
+          int lut_x_offset,
+          InterpolationMethod type,
+          float contrast,
+          float brightness,
+          uint8_t* target);
 
 } // namespace onevr::vr180::cuda

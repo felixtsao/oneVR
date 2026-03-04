@@ -21,6 +21,8 @@ struct OutputSettings {
     int fps_den = 1001;
     int start_time_seconds = 0;
     int duration_seconds = 1;
+    float contrast = 1.0f;
+    int brightness = 0;
 };
 
 struct SoundSettings {

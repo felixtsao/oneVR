@@ -81,12 +81,19 @@ int main(int argc, char** argv) {
                 break;
             }
             case onevr::EncodeHardware::GPU: {
-                onevr::vr180::cuda::warp(
-                    input_left, lut, 0, onevr::vr180::InterpolationMethod::BILINEAR, sbs_composite);
+                onevr::vr180::cuda::warp(input_left,
+                                         lut,
+                                         0,
+                                         onevr::vr180::InterpolationMethod::BILINEAR,
+                                         config.output_settings.contrast,
+                                         config.output_settings.brightness,
+                                         sbs_composite);
                 onevr::vr180::cuda::warp(input_right,
                                          lut,
                                          config.warp_settings.eye_width,
                                          onevr::vr180::InterpolationMethod::BILINEAR,
+                                         config.output_settings.contrast,
+                                         config.output_settings.brightness,
                                          sbs_composite);
                 encoder.write_gpu(sbs_composite, /*pts=*/i++);
                 break;

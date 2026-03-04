@@ -10,7 +10,9 @@
         width: 8192,
         height: 4096,
         start_time_seconds: 1212,
-        duration_seconds: 2
+        duration_seconds: 2,
+        contrast: 1.2,
+        brightness: 32,
         # fps: 30          # default 29.97 fps if not specified
     },
     encode_settings: {
