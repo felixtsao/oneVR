@@ -33,63 +33,136 @@ distort_brown_conrady(float x, float y, const onevr::vr180::Camera::DistortionCo
 }
 
 onevr::UvMap slut(const Camera& cam, const WarpSettings& s) {
+    if (cam.width <= 0 || cam.height <= 0) {
+        throw std::runtime_error("slut: invalid camera dimensions");
+    }
+    if (s.eye_width <= 0 || s.eye_height <= 0) {
+        throw std::runtime_error("slut: invalid eye dimensions");
+    }
+    if (s.yaw_half_rad <= 0.f || s.pitch_half_rad <= 0.f) {
+        throw std::runtime_error("slut: yaw_half_rad/pitch_half_rad must be > 0");
+    }
 
-    if (cam.width <= 0 || cam.height <= 0)
-        throw std::runtime_error("create_warp_slut: invalid camera dimensions");
-    if (s.eye_width <= 0 || s.eye_height <= 0)
-        throw std::runtime_error("create_warp_slut: invalid eye dimensions");
-    if (cam.hfov_degrees <= 0.0f || cam.hfov_degrees >= 180.0f)
-        throw std::runtime_error("hfov_deg must be in (0, 180)");
+    // Intrinsics (prefer provided fx/fy/cx/cy; fallback to HFOV-derived f)
+    float fx = cam.fx;
+    float fy = cam.fy;
+    float cx = (cam.cx >= 0.f) ? cam.cx : (cam.width * 0.5f);
+    float cy = (cam.cy >= 0.f) ? cam.cy : (cam.height * 0.5f);
 
-    const float hfov_radians = deg2rad(cam.hfov_degrees);
-    if (hfov_radians <= 0.0f || hfov_radians >= 3.13f)
-        throw std::runtime_error("create_warp_slut: hfov_rad out of range");
+    if (cam.hfov_degrees >= 0.0 || fx <= 0.f || fy <= 0.f) {
+        if (cam.hfov_degrees <= 0.f || cam.hfov_degrees >= 180.f) {
+            throw std::runtime_error("slut: need fx/fy or hfov_degrees in (0,180)");
+        }
+        const float hfov_rad = deg2rad(cam.hfov_degrees);
+        const float f = (cam.width * 0.5f) / std::tan(hfov_rad * 0.5f);
+        fx = f;
+        fy = f;
+    }
 
-    const float cx = (cam.cx >= 0.0f) ? cam.cx : (cam.width * 0.5f);
-    const float cy = (cam.cy >= 0.0f) ? cam.cy : (cam.height * 0.5f);
+    auto rotate_yaw_pitch_roll = [](float& x, float& y, float& z, float yaw, float pitch, float roll) {
+        // Apply yaw (Y), pitch (X), roll (Z) in that order.
+        // If the sign feels inverted in practice, flip the offsets (common convention issue).
 
-    // Rectilinear focal length from HFOV:
-    const float f = (cam.width * 0.5f) / std::tan(hfov_radians * 0.5f);
+        // yaw around +Y
+        {
+            float cy = std::cos(yaw), sy = std::sin(yaw);
+            float nx = cy * x + sy * z;
+            float nz = -sy * x + cy * z;
+            x = nx;
+            z = nz;
+        }
+        // pitch around +X
+        {
+            float cp = std::cos(pitch), sp = std::sin(pitch);
+            float ny = cp * y - sp * z;
+            float nz = sp * y + cp * z;
+            y = ny;
+            z = nz;
+        }
+        // roll around +Z
+        {
+            float cr = std::cos(roll), sr = std::sin(roll);
+            float nx = cr * x - sr * y;
+            float ny = sr * x + cr * y;
+            x = nx;
+            y = ny;
+        }
+    };
 
     onevr::UvMap lut(s.eye_width, s.eye_height);
 
     for (int y = 0; y < lut.height; ++y) {
-        const float ny = ((y + 0.5f) / lut.height) * 2.0f - 1.0f;
-        const float phi = ny * s.pitch_half_rad; // pitch
-        const float sin_phi = std::sin(phi);
-        const float cos_phi = std::cos(phi);
+        // v01 in [0..1], top=0
+        const float v01 = (y + 0.5f) / (float)lut.height;
+        // latitude: +pitch at top, -pitch at bottom
+        const float lat = (0.5f - v01) * (2.0f * s.pitch_half_rad);
+
+        const float sin_lat = std::sin(lat);
+        const float cos_lat = std::cos(lat);
 
         for (int x = 0; x < lut.width; ++x) {
-            const float nx = ((x + 0.5f) / lut.width) * 2.0f - 1.0f;
-            const float theta = nx * s.yaw_half_rad; // yaw
+            const float u01 = (x + 0.5f) / (float)lut.width;
+            // longitude: left=-yaw, right=+yaw
+            const float lon = (u01 - 0.5f) * (2.0f * s.yaw_half_rad);
 
-            const float sin_theta = std::sin(theta);
-            const float cos_theta = std::cos(theta);
+            // right-handed: X left, Y down, Z forward
+            float dir_x = cos_lat * std::sin(lon);
+            float dir_y = -sin_lat;
+            float dir_z = cos_lat * std::cos(lon);
 
-            // Spherical direction (right-handed):
-            // x right, y up, z forward
-            const float dir_x = cos_phi * sin_theta;
-            const float dir_y = sin_phi;
-            const float dir_z = cos_phi * cos_theta;
+            // Apply user offsets (center tweaks)
+            rotate_yaw_pitch_roll(dir_x,
+                                  dir_y,
+                                  dir_z,
+                                  deg2rad(s.yaw_offset_degrees),
+                                  deg2rad(s.pitch_offset_degrees),
+                                  deg2rad(s.roll_offset_degrees));
 
-            onevr::Uv uv;
+            onevr::Uv uv{};
+            uv.valid = 0;
 
-            // Only front hemisphere.
+            // Only rays in front of the camera (pinhole model)
             if (dir_z <= 1e-6f) {
+                lut.at(x, y) = uv;
+                continue;
+            }
+
+            // Project to normalized pinhole plane
+            const float xn = dir_x / dir_z;
+            const float yn = dir_y / dir_z;
+
+            // Cull outside of nominal camera lens fov
+            float x_min = (0.0f - cx) / fx;
+            float x_max = ((cam.width - 1.0f) - cx) / fx;
+            float y_min = (0.0f - cy) / fy;
+            float y_max = ((cam.height - 1.0f) - cy) / fy;
+
+            float r_max =
+                std::min(std::min(std::fabs(x_min), std::fabs(x_max)), std::min(std::fabs(y_min), std::fabs(y_max)));
+            float r2_max = r_max * r_max;
+
+            float r2 = xn * xn + yn * yn;
+            if (r2 > r2_max) {
                 uv.valid = 0;
                 lut.at(x, y) = uv;
                 continue;
             }
 
-            const float u = f * (dir_x / dir_z) + cx;
-            const float v = f * (dir_y / dir_z) + cy;
+            // Optional lens distortion (Brown–Conrady as you already use it)
+            float xd = xn;
+            float yd = yn;
+            if (cam.lens_distortion) {
+                distort_brown_conrady(xn, yn, cam.lens_distortion_coefficients, &xd, &yd);
+            }
 
-            if (u >= 0.0f && u <= (cam.width - 1.0f) && v >= 0.0f && v <= (cam.height - 1.0f)) {
+            // Intrinsics to pixel coords
+            const float u = fx * xd + cx;
+            const float v = fy * yd + cy;
+
+            if (u >= 0.f && u <= (cam.width - 1.f) && v >= 0.f && v <= (cam.height - 1.f)) {
                 uv.u = u;
                 uv.v = v;
                 uv.valid = 1;
-            } else {
-                uv.valid = 0;
             }
 
             lut.at(x, y) = uv;

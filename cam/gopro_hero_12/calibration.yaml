@@ -1,6 +1,10 @@
-{ # Params from gyroflow
+# Spec:
+# https://community.gopro.com/s/article/HERO12-Black-Digital-Lenses-FOV-Information?language=en_US
+# https://community.gopro.com/s/article/10-Bit-Log-Encoding?language=en_US
+# Calibration from gyroflow
+{
     name: gopro_hero_12,
-    horizontal_fov_degrees: 93.0,
+    horizontal_fov_degrees: -1.0,  # <0 disables fov override and derives from intrinstics
     intrinsics: {
         fx: 2543.5189378,
         fy: 2537.6833426,

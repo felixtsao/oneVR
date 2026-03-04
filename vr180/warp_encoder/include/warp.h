@@ -47,6 +47,10 @@ struct WarpSettings {
     float yaw_half_rad = PI * 0.5f;
     float pitch_half_rad = PI * 0.5f;
 
+    float yaw_offset_degrees = 0.0f;
+    float pitch_offset_degrees = 0.0f;
+    float roll_offset_degrees = 0.0f;
+
     InterpolationMethod interpolation_method = InterpolationMethod::BILINEAR;
 };
 
