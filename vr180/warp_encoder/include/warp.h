@@ -54,6 +54,16 @@ struct WarpSettings {
     InterpolationMethod interpolation_method = InterpolationMethod::BILINEAR;
 };
 
+struct WarpGpuMemory {
+    uint8_t* d_src = nullptr;
+    uint8_t* sbs_composite = nullptr;
+    Uv* d_lut = nullptr;
+
+    size_t src_bytes = 0;
+    size_t lut_bytes = 0;
+    size_t sbs_composite_bytes = 0;
+};
+
 // Synthesize look-up table which encodes warp/camera projection characteristics used throughout
 // runtime
 onevr::UvMap slut(const Camera& cam, const WarpSettings& s);
@@ -65,8 +75,16 @@ onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, Int
 
 namespace onevr::vr180::cuda {
 
+void init_warp_memory(WarpGpuMemory& gpu,
+                      size_t src_width,
+                      size_t src_height,
+                      size_t output_width,
+                      size_t output_height,
+                      const UvMap& lut);
+
 onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod type);
-void warp(const onevr::rgb::Frame& in,
+void warp(WarpGpuMemory& gpu_resources,
+          const onevr::rgb::Frame& in,
           const onevr::UvMap& lut,
           int lut_x_offset,
           InterpolationMethod type,

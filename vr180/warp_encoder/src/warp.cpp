@@ -4,6 +4,7 @@
 #include "onevr/uv_map.h"
 
 #include <cmath>
+#include <cuda_runtime.h>
 #include <iostream>
 #include <stdexcept>
 
@@ -189,20 +190,40 @@ onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, Int
 
 namespace onevr::vr180::cuda {
 
+void init_warp_memory(WarpGpuMemory& gpu,
+                      size_t src_width,
+                      size_t src_height,
+                      size_t output_width,
+                      size_t output_height,
+                      const UvMap& lut) {
+
+    gpu.lut_bytes = lut.width * lut.height * sizeof(Uv);
+    gpu.src_bytes = src_width * src_height * 3;
+    gpu.sbs_composite_bytes = output_width * output_height * 3; // 3 channel RGB
+
+    cudaMalloc(&gpu.d_lut, gpu.lut_bytes);
+    cudaMemcpy(gpu.d_lut, lut.data.data(), gpu.lut_bytes, cudaMemcpyHostToDevice);
+
+    cudaMalloc(&gpu.d_src, gpu.src_bytes);
+    cudaMalloc(&gpu.sbs_composite, gpu.sbs_composite_bytes);
+}
+
 // Warp using GPU but does H2D io/copies back to CPU
 onevr::rgb::Frame warp(const onevr::rgb::Frame& in, const onevr::UvMap& lut, InterpolationMethod interp) {
     return onevr::cuda::project_bilinear(in, lut);
 }
 
 // Warp in-place on GPU memory
-void warp(const onevr::rgb::Frame& in,
+void warp(WarpGpuMemory& gpu_memory,
+          const onevr::rgb::Frame& in,
           const onevr::UvMap& lut,
           int lut_x_offset,
           InterpolationMethod interp,
           float contrast,
           float brightness,
           uint8_t* target) {
-    onevr::cuda::project_bilinear(in, lut, lut_x_offset, contrast, brightness, target);
+    onevr::cuda::project_bilinear(
+        in, gpu_memory.d_src, lut, gpu_memory.d_lut, lut_x_offset, contrast, brightness, target);
 }
 
 } // namespace onevr::vr180::cuda

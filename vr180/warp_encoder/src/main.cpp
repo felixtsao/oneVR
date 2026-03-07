@@ -39,11 +39,14 @@ int main(int argc, char** argv) {
 
     // Allocate buffers
     onevr::rgb::Frame input_left, input_right;
-    uint8_t* sbs_composite = nullptr;
+    onevr::vr180::WarpGpuMemory gpu_memory;
     if (config.encode_settings.hardware == onevr::EncodeHardware::GPU) {
-        const size_t sbs_composite_bytes =
-            (size_t)config.encode_settings.output_width * config.encode_settings.output_height * 3; // 3 channel RGB
-        cudaMalloc(&sbs_composite, sbs_composite_bytes);
+        onevr::vr180::cuda::init_warp_memory(gpu_memory,
+                                             config.camera_parameters.width,
+                                             config.camera_parameters.height,
+                                             config.encode_settings.output_width,
+                                             config.encode_settings.output_height,
+                                             lut);
     }
 
     decoder_left.seek_seconds(config.output_settings.start_time_seconds);
@@ -81,21 +84,23 @@ int main(int argc, char** argv) {
                 break;
             }
             case onevr::EncodeHardware::GPU: {
-                onevr::vr180::cuda::warp(input_left,
+                onevr::vr180::cuda::warp(gpu_memory,
+                                         input_left,
                                          lut,
                                          0,
                                          onevr::vr180::InterpolationMethod::BILINEAR,
                                          config.output_settings.contrast,
                                          config.output_settings.brightness,
-                                         sbs_composite);
-                onevr::vr180::cuda::warp(input_right,
+                                         gpu_memory.sbs_composite);
+                onevr::vr180::cuda::warp(gpu_memory,
+                                         input_right,
                                          lut,
                                          config.warp_settings.eye_width,
                                          onevr::vr180::InterpolationMethod::BILINEAR,
                                          config.output_settings.contrast,
                                          config.output_settings.brightness,
-                                         sbs_composite);
-                encoder.write_gpu(sbs_composite, /*pts=*/i++);
+                                         gpu_memory.sbs_composite);
+                encoder.write_gpu(gpu_memory.sbs_composite, /*pts=*/i++);
                 break;
             }
         }
@@ -105,8 +110,6 @@ int main(int argc, char** argv) {
     }
 
     encoder.finish();
-    if (sbs_composite)
-        cudaFree(sbs_composite);
 
     return 0;
 }

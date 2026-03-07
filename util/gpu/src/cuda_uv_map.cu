@@ -192,22 +192,19 @@ rgb::Frame project_bilinear(const rgb::Frame& src, const UvMap& lut) {
     return dst;
 }
 
-void project_bilinear(
-    const rgb::Frame& src, const UvMap& lut, int lut_x_offset, float contrast, float brightness, uint8_t* target) {
+void project_bilinear(const rgb::Frame& src,
+                      uint8_t* d_src,
+                      const UvMap& lut,
+                      const Uv* d_lut,
+                      int lut_x_offset,
+                      float contrast,
+                      float brightness,
+                      uint8_t* target) {
     const int out_w = lut.width;
     const int out_h = lut.height;
-
-    const size_t src_bytes = (size_t)src.width * src.height * 3;
-    const size_t lut_bytes = (size_t)out_w * out_h * sizeof(Uv);
-
-    uint8_t* d_src = nullptr;
-    Uv* d_lut = nullptr;
-
-    handle_cuda_error(cudaMalloc(&d_src, src_bytes), "cudaMalloc d_src");
-    handle_cuda_error(cudaMalloc(&d_lut, lut_bytes), "cudaMalloc d_lut");
+    const size_t src_bytes = src.width * src.height * 3;
 
     handle_cuda_error(cudaMemcpy(d_src, src.data.data(), src_bytes, cudaMemcpyHostToDevice), "H2D src");
-    handle_cuda_error(cudaMemcpy(d_lut, lut.data.data(), lut_bytes, cudaMemcpyHostToDevice), "H2D lut");
 
     dim3 block(16, 16);
     dim3 grid((out_w + block.x - 1) / block.x, (out_h + block.y - 1) / block.y);
@@ -226,9 +223,6 @@ void project_bilinear(
 
     handle_cuda_error(cudaGetLastError(), "warp kernel");
     handle_cuda_error(cudaDeviceSynchronize(), "warp sync");
-
-    cudaFree(d_src);
-    cudaFree(d_lut);
 }
 
 // BT.709
