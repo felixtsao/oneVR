@@ -20,12 +20,12 @@ Download and playback in a VR180 supported device:
 
 ## Getting Started
 
-The `vr180/` directory [readme](vr180/readme.md) outlines steps to build and run software to generate a VR180 video using sample input videos from an example camera rig.
+The `vr180/` directory [readme](vr180/README.md) outlines steps to build and run software to generate a VR180 video using sample input videos from an example camera rig.
 
 ### Active Directories
 
 `vr180/`  
-> VR180 software ([readme](vr180/readme.md))
+> VR180 software ([readme](vr180/README.md))
 
 `cam/`  
 > Camera hardware and software configuration including camera intrinsics/extrinsics characterization for use in software tooling, 3D printable camera rig files (`.stl`), generator files (`.scad`) and camera control commands. Designs and calibration to support other cameras to be added here.
@@ -66,7 +66,7 @@ VR180 and 360 videos can be viewed on various devices. Youtube and other VR vide
 </td>
 <td width="50%">
 <h3> VR180 3D side-by-side (SBS) </h3>
-A CNC machined aluminum slide rail can secure 2 GoPro Hero 12 cameras in a fronto-parallel, side-by-side orientation. Each camera inherits the viewpoint of each human eye when both cameras are placed a typical inter-pupillary distance apart and creates a 3D disparity/parallax/depth effect when viewed in an AR/VR headset. The <a href="https://github.com/felixtsao/oneVR/blob/main/vr180/readme.md">vr180</a> directory contains software which processes multiple camera streams into a single VR180 video file format for playback in VR/AR display. GoPro supports timecode frame <a href="https://community.gopro.com/s/article/HERO12-Black-Timecode-Sync?language=en_US" target="_blank">sync</a> to align both camera streams in time.
+A CNC machined aluminum slide rail can secure 2 GoPro Hero 12 cameras in a fronto-parallel, side-by-side orientation. Each camera inherits the viewpoint of each human eye when both cameras are placed a typical inter-pupillary distance apart and creates a 3D disparity/parallax/depth effect when viewed in an AR/VR headset. The <a href="https://github.com/felixtsao/oneVR/blob/main/vr180/README.md">vr180</a> directory contains software which processes multiple camera streams into a single VR180 video file format for playback in VR/AR display. GoPro supports timecode frame <a href="https://community.gopro.com/s/article/HERO12-Black-Timecode-Sync?language=en_US" target="_blank">sync</a> to align both camera streams in time.
 </td>
 </tr>
 </table>
